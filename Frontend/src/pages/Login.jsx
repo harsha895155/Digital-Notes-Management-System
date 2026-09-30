@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import diary from "./image.png";
+import API_BASE_URL from "../api/config";
 
 function Login() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ function Login() {
 
     try {
       const res = await axios.post(
-        "https://gnapika-backend.onrender.com/api/login",
+        `${API_BASE_URL}/api/login`,
         {
           email,
           password,

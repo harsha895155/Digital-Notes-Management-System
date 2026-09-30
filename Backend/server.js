@@ -11,7 +11,32 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 
-app.use(cors());
+// Configurable CORS for production & local development
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.length === 0 ||
+        allowedOrigins.includes("*") ||
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true); // Fallback to allow initial setup
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 mongoose
@@ -23,8 +48,21 @@ mongoose
     console.log("MongoDB Connection Failed", error);
   });
 
+// Health check endpoint for monitoring (Render, Railway, UptimeRobot)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+  });
+});
+
 app.get("/", (req, res) => {
-  res.send("Backend Server Running");
+  res.status(200).json({
+    message: "Backend Server Running",
+    status: "ok",
+  });
 });
 
 
@@ -404,6 +442,17 @@ app.delete("/api/categories/:id", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  server.close(() => {
+    mongoose.connection.close(false, () => {
+      console.log("MongoDB connection closed.");
+      process.exit(0);
+    });
+  });
 });

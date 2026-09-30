@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import API_BASE_URL from "../api/config";
 
 function MyNotes({
   fetchTotalNotes,
@@ -28,7 +29,7 @@ localStorage.getItem("user")
 
 
   const res = await axios.get(
-    `https://gnapika-backend.onrender.com/api/notes/${user.email}`
+    `${API_BASE_URL}/api/notes/${user.email}`
   );
 
   setNotes(res.data);
@@ -47,7 +48,7 @@ localStorage.getItem("user")
 
 
   const res = await axios.get(
-    `https://gnapika-backend.onrender.com/api/categories/${user.email}`
+    `${API_BASE_URL}/api/categories/${user.email}`
   );
 
   setCategories(res.data);
@@ -77,7 +78,7 @@ const handleDeleteCategory = async (
   try {
 
     await axios.delete(
-      `https://gnapika-backend.onrender.com/api/categories/${id}`
+      `${API_BASE_URL}/api/categories/${id}`
     );
 
     await fetchCategories();
@@ -120,7 +121,7 @@ const handleCreateCategory = async () => {
     );
 
     await axios.post(
-      "https://gnapika-backend.onrender.com/api/categories",
+      `${API_BASE_URL}/api/categories`,
       {
         name: newCategory,
         userEmail: user.email,
@@ -157,7 +158,7 @@ const handleAddNote = async () => {
 
     if (editId) {
       const res = await axios.put(
-        `https://gnapika-backend.onrender.com/api/notes/${editId}`,
+        `${API_BASE_URL}/api/notes/${editId}`,
         {
           title,
           description: content,
@@ -176,7 +177,7 @@ const handleAddNote = async () => {
       setEditId(null);
     } else {
       const res = await axios.post(
-        "https://gnapika-backend.onrender.com/api/notes",
+        `${API_BASE_URL}/api/notes`,
         {
           title,
           description: content,
@@ -221,7 +222,7 @@ const handleDelete = async (id) => {
   try {
 
     await axios.delete(
-      `https://gnapika-backend.onrender.com/api/notes/${id}`
+      `${API_BASE_URL}/api/notes/${id}`
     );
 
     setNotes((prevNotes) =>

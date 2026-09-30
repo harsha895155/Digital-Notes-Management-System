@@ -7,6 +7,7 @@ import axios from "axios";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import logo from "./logo.png";
+import API_BASE_URL from "../api/config";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const fetchTodos = async () => {
   );
 
   const res = await axios.get(
-    `https://gnapika-backend.onrender.com/api/todos/${user.email}`
+    `${API_BASE_URL}/api/todos/${user.email}`
   );
 
   setTodos(res.data);
@@ -45,7 +46,7 @@ const handleAddTodo = async () => {
   );
 
   await axios.post(
-    "https://gnapika-backend.onrender.com/api/todos",
+    `${API_BASE_URL}/api/todos`,
     {
       task,
       userEmail: user.email,
@@ -101,7 +102,7 @@ const fetchTotalNotes = async () => {
     );
 
     const res = await axios.get(
-      `https://gnapika-backend.onrender.com/api/notes/${user.email}`
+      `${API_BASE_URL}/api/notes/${user.email}`
     );
 
     setTotalNotes(res.data.length);
@@ -116,7 +117,7 @@ const fetchUpcomingNotes = async () => {
     );
 
     const res = await axios.get(
-      `https://gnapika-backend.onrender.com/api/notes/${user.email}`
+      `${API_BASE_URL}/api/notes/${user.email}`
     );
     setNotes(res.data);
 
@@ -148,7 +149,7 @@ const fetchUpcomingNotes = async () => {
 const toggleTodo = async (id) => {
   try {
     await axios.put(
-      `https://gnapika-backend.onrender.com/api/todos/${id}`
+      `${API_BASE_URL}/api/todos/${id}`
     );
 
     fetchTodos();

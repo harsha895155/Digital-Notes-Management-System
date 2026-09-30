@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
+
 /* ================= LOGIN / REGISTER / CHANGE PASSWORD ================= */
 
 .login-bg {
@@ -693,7 +695,6 @@ deadline-date{
   height: 80px;
   object-fit: contain;
 }
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
 
 .Gnapika-title {
   margin: 0;

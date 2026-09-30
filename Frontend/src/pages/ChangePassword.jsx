@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import diary from "./pswd.png";
+import API_BASE_URL from "../api/config";
 
 function ChangePassword() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ function ChangePassword() {
 
     try {
       const res = await axios.put(
-        "https://gnapika-backend.onrender.com/api/change-password",
+        `${API_BASE_URL}/api/change-password`,
         {
           email,
           currentPassword,

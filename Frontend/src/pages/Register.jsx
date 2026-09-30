@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import diary from "./image.png";
+import API_BASE_URL from "../api/config";
 
 function Register() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ function Register() {
 
     try {
       const res = await axios.post(
-       "https://gnapika-backend.onrender.com/api/register",
+       `${API_BASE_URL}/api/register`,
         {
           fullName,
           email,
