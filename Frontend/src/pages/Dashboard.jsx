@@ -184,15 +184,6 @@ const toggleTodo = async (id) => {
 </div>
 
           <div className="d-flex align-items-center">
-            <span
-              className="badge rounded-pill me-3 d-none d-md-inline-flex align-items-center"
-              style={{ background: '#f5ede4', color: '#5c4033', padding: '8px 14px', fontSize: '0.82rem' }}
-              title="Official Platform Email"
-            >
-              <i className="bi bi-envelope-fill me-2 text-warning"></i>
-              minddesk43@gmail.com
-            </span>
-
             <button
               className="btn btn-outline-secondary me-2"
               onClick={handleChangePassword}

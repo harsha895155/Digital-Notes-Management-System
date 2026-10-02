@@ -80,7 +80,7 @@ function Login() {
             <input
               type="email"
               className="form-control border-0"
-              placeholder="minddesk43@gmail.com"
+              placeholder="Email"
               value={email}
               onChange={(e) =>
                 setEmail(e.target.value)
