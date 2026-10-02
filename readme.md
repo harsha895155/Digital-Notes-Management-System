@@ -242,6 +242,116 @@ Render / Railway / Vercel (Production Express REST API)
 
 ---
 
+## 📱 MindDesk Mobile Application (Android & iOS)
+
+MindDesk features a production-ready native mobile app built with **React Native + Expo SDK 57 + TypeScript**, connecting directly to the same existing production Express backend and MongoDB Atlas database.
+
+### Unified Architecture
+
+```
+                    ┌─────────────────────────┐
+                    │    MindDesk Android     │
+                    │   (React Native/Expo)   │
+                    └────────────┬────────────┘
+                                 │
+                                 │ HTTPS (Bearer JWT)
+                                 │
+                    ┌────────────▼────────────┐
+                    │      MindDesk iOS       │
+                    │   (React Native/Expo)   │
+                    └────────────┬────────────┘
+                                 │
+                                 │
+                    ┌────────────▼────────────┐
+                    │   Express REST API      │
+                    │   (Render Production)   │
+                    └──────┬───────────▲──────┘
+                           │           │
+                           │           │ HTTPS (Bearer JWT)
+                           │           │
+                           │   ┌───────┴─────────┐
+                           │   │  MindDesk Web   │
+                           │   │  (React + Vite) │
+                           │   └─────────────────┘
+                           │
+            ┌──────────────┴──────────────┐
+            │                             │
+    ┌───────▼────────┐           ┌────────▼────────┐
+    │ MongoDB Atlas  │           │ Cloud Storage   │
+    │  (Single DB)   │           │ (Cloudinary)    │
+    └────────────────┘           └─────────────────┘
+```
+
+### Mobile Features
+
+- **Native Bottom Tab Navigation**: Home, Notes, Calendar, Tasks, and Profile.
+- **Home Dashboard**: Live greeting, real MongoDB statistics (Total Notes, Categories, Tasks Done, Deadlines), Today's Tasks preview with checkboxes, and Upcoming Deadlines list.
+- **Notes Screen**: Fast FlatList rendering, keyword search, category filter chips, note creation modal, edit & delete actions.
+- **Full File Attachment Support**: Pick documents (`expo-document-picker`) or photos (`expo-image-picker`), preview metadata, upload to `/api/upload`, and download/open attachments securely (`expo-file-system` & `expo-sharing`).
+- **Interactive Calendar**: Full month navigation, today marker, date event indicators, and day inspection showing deadlines and tasks.
+- **Tasks Management**: Quick-add bar, filters (All, Pending, Done), toggle completion, and deletion.
+- **User Profile**: View/edit profile details (Full Name, Username, Phone, Bio), upload/change profile photo, and view real activity metrics.
+- **Security & Storage**: JWT tokens stored securely using `expo-secure-store` (never in plain AsyncStorage), automatic token refresh, and auto-logout on 401 session expiry.
+- **Visual Consistency**: Exact MindDesk aesthetic with warm ivory background (`#F5EBDD`), espresso dark (`#24160F`), saddle brown (`#8B4F27`), gold accents (`#D69A55`), rounded cards, and clean typography.
+
+### Mobile Setup & Development
+
+1. **Navigate to the Mobile directory**:
+   ```bash
+   cd Mobile
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables**:
+   Create `Mobile/.env`:
+   ```bash
+   EXPO_PUBLIC_API_URL=https://digital-notes-management-system.onrender.com
+   ```
+   *(For testing on a physical device on your local Wi-Fi, change to your PC's LAN IP, e.g. `http://192.168.1.100:5000`)*
+
+4. **Start the Expo Development Server**:
+   ```bash
+   npx expo start
+   ```
+   - Scan the QR code using the **Expo Go** app on Android or the Camera app on iOS.
+   - Press `a` for Android emulator or `i` for iOS simulator.
+
+### Android & iOS Production Builds (EAS)
+
+1. **Install EAS CLI**:
+   ```bash
+   npm install -g eas-cli
+   ```
+
+2. **Login to Expo**:
+   ```bash
+   eas login
+   ```
+
+3. **Generate Android Preview APK (Directly installable on phones)**:
+   ```bash
+   cd Mobile
+   eas build --platform android --profile preview
+   ```
+
+4. **Generate Android Production AAB (Google Play Store)**:
+   ```bash
+   cd Mobile
+   eas build --platform android --profile production
+   ```
+
+5. **Generate iOS Build**:
+   ```bash
+   cd Mobile
+   eas build --platform ios --profile production
+   ```
+
+---
+
 ## 🔒 Security Behavior
 
 - **Stateless JWT Verification**: All upload, download, and deletion requests must supply a valid JWT token in `Authorization: Bearer <token>` or `?token=` parameter.
