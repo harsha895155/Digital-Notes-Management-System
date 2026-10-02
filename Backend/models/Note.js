@@ -58,6 +58,11 @@ const noteSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    folder: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     deadline: {
       type: Date,
       default: null,

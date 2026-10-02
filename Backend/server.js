@@ -236,6 +236,76 @@ app.get("/api/categories/:email", async (req, res) => {
   }
 });
 
+// ==================== CREATE FOLDER IN CATEGORY ====================
+app.post("/api/categories/:id/folders", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Folder name is required" });
+    }
+
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    const trimmed = name.trim();
+    const exists = (category.folders || []).some(
+      (f) => f.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exists) {
+      return res
+        .status(400)
+        .json({ message: `Folder "${trimmed}" already exists in this category` });
+    }
+
+    category.folders.push({ name: trimmed });
+    await category.save();
+
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to create folder",
+      error: error.message,
+    });
+  }
+});
+
+// ==================== DELETE FOLDER FROM CATEGORY ====================
+app.delete("/api/categories/:id/folders/:folderId", async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    const folder = category.folders.id(req.params.folderId);
+    if (!folder) {
+      return res.status(404).json({ message: "Folder not found" });
+    }
+
+    const folderName = folder.name;
+    category.folders.pull({ _id: req.params.folderId });
+    await category.save();
+
+    // Reset folder field for notes that were in this folder
+    await Note.updateMany(
+      { category: category.name, folder: folderName, userEmail: category.userEmail },
+      { $set: { folder: "" } }
+    );
+
+    res.status(200).json({
+      message: `Folder "${folderName}" deleted successfully`,
+      category,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to delete folder",
+      error: error.message,
+    });
+  }
+});
+
 
 // ==================== LOGIN ====================
 
@@ -348,6 +418,7 @@ app.post("/api/notes", async (req, res) => {
       title,
       description,
       category,
+      folder,
       deadline,
       userEmail,
       attachments,
@@ -357,6 +428,7 @@ app.post("/api/notes", async (req, res) => {
       title,
       description,
       category,
+      folder: folder ? folder.trim() : "",
       deadline,
       userEmail,
       attachments: Array.isArray(attachments) ? attachments : [],
@@ -398,6 +470,9 @@ app.put("/api/notes/:id", async (req, res) => {
       deadline: req.body.deadline,
     };
 
+    if (req.body.folder !== undefined) {
+      updateData.folder = req.body.folder ? req.body.folder.trim() : "";
+    }
     if (req.body.attachments !== undefined) {
       updateData.attachments = req.body.attachments;
     }
