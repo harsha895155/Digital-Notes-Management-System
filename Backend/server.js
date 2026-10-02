@@ -507,7 +507,7 @@ const PORT = process.env.PORT || 5000;
 
 // Only start standalone HTTP server when executed directly (not when imported as a serverless function)
 if (require.main === module) {
-  const server = app.listen(PORT, () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
   });
 

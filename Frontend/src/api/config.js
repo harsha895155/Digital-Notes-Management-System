@@ -1,15 +1,24 @@
 // Centralized API configuration for production and development
 const getBaseUrl = () => {
-  // If in browser environment
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
-    // When visiting from localhost or 127.0.0.1, ALWAYS use local backend on port 5000
+
+    // When visiting from localhost or 127.0.0.1, connect to local backend on port 5000
     if (host === "localhost" || host === "127.0.0.1") {
-      return import.meta.env.VITE_DEV_API_URL || "http://localhost:5000";
+      return (
+        import.meta.env.VITE_DEV_API_URL ||
+        `${window.location.protocol}//${host}:5000`
+      );
+    }
+
+    // When running on Vercel (*.vercel.app), use same-origin relative API path ("")
+    // Vercel rewrites will proxy /api/* directly to the backend, preventing all cross-origin blocks
+    if (host.endsWith(".vercel.app")) {
+      return "";
     }
   }
 
-  // Production backend URL
+  // Production backend URL fallback
   return (
     import.meta.env.VITE_API_URL ||
     "https://digital-notes-management-system.onrender.com"
