@@ -8,6 +8,7 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import logo from "./logo.png";
 import API_BASE_URL from "../api/config";
+import { toast } from "../context/ToastContext";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ fetchTodos();
     localStorage.removeItem("user");
     localStorage.removeItem("loginTime");
 
-    alert("Session expired. Please login again.");
+    toast.warning("Your session has expired. Please login again.", "Session Timeout");
     navigate("/");
   }
 }, [user, navigate]);
@@ -92,6 +93,7 @@ fetchTodos();
   localStorage.removeItem("user");
   localStorage.removeItem("loginTime");
 
+  toast.info("Logged out successfully.", "See You Soon");
   navigate("/");
 };
 

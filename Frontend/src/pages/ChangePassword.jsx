@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import diary from "./pswd.png";
 import API_BASE_URL from "../api/config";
+import { toast } from "../context/ToastContext";
 
 function ChangePassword() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ function ChangePassword() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChangePassword = async () => {
     if (
@@ -19,16 +21,17 @@ function ChangePassword() {
       !newPassword ||
       !confirmPassword
     ) {
-      alert("Please fill all fields");
+      toast.warning("Please fill in all required fields.", "Incomplete Fields");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("New passwords do not match. Please verify and try again.", "Password Mismatch");
       return;
     }
 
     try {
+      setLoading(true);
       const res = await axios.put(
         `${API_BASE_URL}/api/change-password`,
         {
@@ -38,14 +41,19 @@ function ChangePassword() {
         }
       );
 
-      alert(res.data.message);
+      toast.success(res.data.message || "Password updated successfully!", "Success");
 
-      navigate("/");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
     } catch (err) {
-      alert(
+      toast.error(
         err.response?.data?.message ||
-          "Password update failed"
+          "Password update failed. Please check your current password.",
+        "Update Failed"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -138,14 +146,22 @@ function ChangePassword() {
           <button
             className="btn login-btn w-100"
             onClick={handleChangePassword}
+            disabled={loading}
           >
-            Update Password
+            {loading ? (
+              <span>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating Password...
+              </span>
+            ) : (
+              "Update Password"
+            )}
           </button>
 
           <p className="text-center mt-4">
             Remember your password?{" "}
             <Link
-              to="/"
+              to="/login"
               className="signup-link text-decoration-none"
             >
               Back to Login

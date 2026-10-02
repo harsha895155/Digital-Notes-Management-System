@@ -3,20 +3,23 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import diary from "./image.png";
 import API_BASE_URL from "../api/config";
+import { toast } from "../context/ToastContext";
 
 function Login() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      alert("Please fill all fields");
+      toast.warning("Please enter your email and password.", "Missing Credentials");
       return;
     }
 
     try {
+      setLoading(true);
       const res = await axios.post(
         `${API_BASE_URL}/api/login`,
         {
@@ -25,29 +28,22 @@ function Login() {
         }
       );
 
-      alert(res.data.message);
+      toast.success(res.data.message || "Welcome back!", "Login Successful");
 
-     localStorage.setItem(
-  "token",
-  res.data.token
-);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("loginTime", Date.now());
 
-localStorage.setItem(
-  "user",
-  JSON.stringify(res.data.user)
-);
-
-localStorage.setItem(
-  "loginTime",
-  Date.now()
-);
-
-
-      navigate("/dashboard");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 700);
     } catch (err) {
-      alert(
-        err.response?.data?.message || "Login Failed"
+      toast.error(
+        err.response?.data?.message || err.message || "Unable to log in. Please verify your credentials.",
+        "Login Failed"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -135,8 +131,16 @@ localStorage.setItem(
           <button
             className="btn login-btn w-100"
             onClick={handleLogin}
+            disabled={loading}
           >
-            Login
+            {loading ? (
+              <span>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Logging in...
+              </span>
+            ) : (
+              "Login"
+            )}
           </button>
 
           <p className="text-center mt-4">

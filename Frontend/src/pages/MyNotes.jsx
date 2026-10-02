@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import API_BASE_URL from "../api/config";
+import { toast, showConfirm } from "../context/ToastContext";
 
 function MyNotes({
   fetchTotalNotes,
@@ -67,9 +68,13 @@ const handleDeleteCategory = async (
     (note) => note.category === categoryName
   ).length;
 
-  const confirmDelete = window.confirm(
-    `This category contains ${notesInCategory} notes.\n\nDelete category and all notes?`
-  );
+  const confirmDelete = await showConfirm({
+    title: "Delete Category?",
+    message: `This category contains ${notesInCategory} note${notesInCategory === 1 ? "" : "s"}. Delete category and all its notes? This action cannot be undone.`,
+    confirmText: "Delete Category",
+    cancelText: "Cancel",
+    type: "danger",
+  });
 
   if (!confirmDelete) {
     return;
@@ -90,13 +95,14 @@ const handleDeleteCategory = async (
 
     setSelectedCategory("All Notes");
 
-    alert(
-      "Category and related notes deleted successfully"
+    toast.success(
+      "Category and related notes deleted successfully",
+      "Category Deleted"
     );
 
   } catch (error) {
 
-    alert("Failed to delete category");
+    toast.error("Failed to delete category", "Error");
 
   }
 
@@ -111,7 +117,7 @@ useEffect(() => {
 
 const handleCreateCategory = async () => {
   if (!newCategory.trim()) {
-    alert("Enter category name");
+    toast.warning("Please enter a category name first.", "Missing Category Name");
     return;
   }
 
@@ -131,9 +137,9 @@ const handleCreateCategory = async () => {
     setNewCategory("");
     await fetchCategories();
 
-    alert("Category Created Successfully");
+    toast.success("Category created successfully", "Category Added");
   } catch (error) {
-    alert("Failed to create category");
+    toast.error("Failed to create category", "Error");
   }
 
 
@@ -146,7 +152,7 @@ const handleAddNote = async () => {
     !content.trim() ||
     !category
   ) {
-    alert("Please fill all fields");
+    toast.warning("Please fill in title, content, and category.", "Incomplete Note");
     return;
   }
 
@@ -173,7 +179,7 @@ const handleAddNote = async () => {
         )
       );
 
-      alert("Note Updated Successfully");
+      toast.success("Note updated successfully", "Note Saved");
       setEditId(null);
     } else {
       const res = await axios.post(
@@ -191,7 +197,7 @@ const handleAddNote = async () => {
       setSelectedCategory("All Notes");
       setSearch("");
 
-      alert("Note Added Successfully");
+      toast.success("Note added successfully to your collection", "Note Created");
     }
 
     setTitle("");
@@ -207,10 +213,12 @@ const handleAddNote = async () => {
 
     console.log("FULL ERROR:", error);
 
-    alert(
+    toast.error(
       error.response?.data?.message ||
       error.response?.data?.error ||
-      error.message
+      error.message ||
+      "Failed to save note",
+      "Error Saving Note"
     );
 
   }
@@ -218,6 +226,16 @@ const handleAddNote = async () => {
 };
 
 const handleDelete = async (id) => {
+
+  const confirmed = await showConfirm({
+    title: "Delete Note?",
+    message: "Are you sure you want to permanently delete this note?",
+    confirmText: "Delete Note",
+    cancelText: "Cancel",
+    type: "danger",
+  });
+
+  if (!confirmed) return;
 
   try {
 
@@ -236,15 +254,17 @@ const handleDelete = async (id) => {
 
     await fetchUpcomingNotes();
 
-    alert("Note Deleted Successfully");
+    toast.success("Note deleted successfully", "Note Removed");
 
   } catch (error) {
 
     console.log(error);
 
-    alert(
+    toast.error(
       error.response?.data?.message ||
-      error.message
+      error.message ||
+      "Failed to delete note",
+      "Error"
     );
 
   }

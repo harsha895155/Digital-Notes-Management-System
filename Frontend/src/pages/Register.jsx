@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import diary from "./image.png";
 import API_BASE_URL from "../api/config";
+import { toast } from "../context/ToastContext";
 
 function Register() {
   const navigate = useNavigate();
@@ -11,19 +12,21 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
-      alert("Please fill all fields");
+      toast.warning("Please fill in all fields before registering.", "Incomplete Form");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match. Please check and try again.", "Password Mismatch");
       return;
     }
 
     try {
+      setLoading(true);
       const res = await axios.post(
        `${API_BASE_URL}/api/register`,
         {
@@ -34,18 +37,23 @@ function Register() {
         }
       );
 
-      alert(res.data.message);
+      toast.success(res.data.message || "Registration Successful!", "Account Created");
 
       setFullName("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
 
-      navigate("/");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
     } catch (err) {
-      alert(
-        err.response?.data?.message || "Registration Failed"
+      toast.error(
+        err.response?.data?.message || err.message || "Unable to complete registration.",
+        "Registration Failed"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -140,14 +148,22 @@ function Register() {
           <button
             className="btn login-btn w-100"
             onClick={handleRegister}
+            disabled={loading}
           >
-            Register
+            {loading ? (
+              <span>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Creating Account...
+              </span>
+            ) : (
+              "Register"
+            )}
           </button>
 
           <p className="text-center mt-4">
             Already have an account?{" "}
             <Link
-              to="/"
+              to="/login"
               className="signup-link text-decoration-none"
             >
               Login
