@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate} from "react-router-dom";
 import "./App.css";
+import "./components/Attachments.css";
 import { ToastProvider } from "./context/ToastContext";
 import Register from "./pages/Register";
 import Login from "./pages/Login";

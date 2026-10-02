@@ -13,3 +13,7 @@ Frontend/dist/
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Local uploads
+Backend/uploads/*
+!Backend/uploads/.gitkeep

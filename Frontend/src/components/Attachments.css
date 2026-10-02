@@ -1,0 +1,502 @@
+/* ==================== MINDDESK ATTACHMENTS & UPLOAD SYSTEM ==================== */
+
+:root {
+  --md-primary-brown: #532909;
+  --md-accent-brown: #8b5e3c;
+  --md-light-brown: #f7f2eb;
+  --md-border-color: #e5d9cf;
+  --md-text-muted: #8b7d75;
+  --md-text-dark: #3b2a22;
+}
+
+/* ---------- Active Note Editor Highlight & Scroll Anchor ---------- */
+.note-form-editing {
+  border: 2px solid #8b5e3c !important;
+  box-shadow: 0 14px 35px rgba(139, 94, 60, 0.18) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: editPulse 0.4s ease;
+}
+
+@keyframes editPulse {
+  0% {
+    transform: scale(0.99);
+  }
+  50% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+
+/* ---------- Attachment Indicator Badge (Card header / list item) ---------- */
+.attachment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(139, 94, 60, 0.1);
+  color: #8b5e3c;
+  border: 1px solid rgba(229, 217, 207, 0.9);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.attachment-badge:hover {
+  background: rgba(139, 94, 60, 0.18);
+  transform: translateY(-1px);
+}
+
+.attachment-badge i {
+  font-size: 0.9rem;
+}
+
+/* ---------- Upload Dropzone Container ---------- */
+.attachment-upload-zone {
+  position: relative;
+  border: 2px dashed #d6c6b8;
+  border-radius: 16px;
+  padding: 24px 20px;
+  background: #faf7f2;
+  text-align: center;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  outline: none;
+}
+
+.attachment-upload-zone:hover {
+  border-color: #8b5e3c;
+  background: #fdfbf7;
+}
+
+.attachment-upload-zone.drag-active {
+  border-color: #532909;
+  background: #f4ece2;
+  box-shadow: 0 0 0 4px rgba(139, 94, 60, 0.15);
+  transform: scale(1.01);
+}
+
+.attachment-upload-zone.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.upload-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-icon-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(139, 94, 60, 0.12);
+  color: #8b5e3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+  transition: transform 0.25s ease;
+}
+
+.attachment-upload-zone:hover .upload-icon-circle {
+  transform: translateY(-3px) scale(1.05);
+  background: rgba(83, 41, 9, 0.15);
+  color: #532909;
+}
+
+.upload-title {
+  font-weight: 600;
+  color: #5c4033;
+  font-size: 0.98rem;
+  margin: 0;
+}
+
+.upload-subtitle {
+  font-size: 0.82rem;
+  color: #8b7d75;
+  margin: 0;
+}
+
+.upload-limits-note {
+  font-size: 0.76rem;
+  color: #a4968e;
+  margin-top: 4px;
+}
+
+/* Browse Button inside Dropzone */
+.btn-browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #532909;
+  background: #ffffff;
+  border: 1px solid #d6c6b8;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.btn-browse:hover {
+  background: #532909;
+  color: #ffffff;
+  border-color: #532909;
+}
+
+/* Upload Progress Bar */
+.upload-progress-wrapper {
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1px solid #e5d9cf;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.upload-progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #5c4033;
+  margin-bottom: 6px;
+}
+
+.upload-progress-bar {
+  height: 6px;
+  border-radius: 6px;
+  background: #e5d9cf;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5e3c, #532909);
+  transition: width 0.2s ease;
+  border-radius: 6px;
+}
+
+/* ---------- Attachments List & Items ---------- */
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e8ded4;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(92, 64, 51, 0.03);
+}
+
+.attachment-item:hover {
+  border-color: #c9b7a7;
+  box-shadow: 0 4px 12px rgba(92, 64, 51, 0.08);
+  transform: translateY(-1px);
+}
+
+.attachment-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.attachment-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  overflow: hidden;
+}
+
+.attachment-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.attachment-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.attachment-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #3b2a22;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.attachment-submeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: #8b7d75;
+}
+
+.attachment-submeta-dot {
+  font-size: 0.6rem;
+  opacity: 0.6;
+}
+
+.attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+}
+
+.btn-attachment-action {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #744124;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-attachment-action:hover {
+  background: #f4ece2;
+  color: #532909;
+}
+
+.btn-attachment-action.btn-download:hover {
+  background: rgba(43, 87, 154, 0.12);
+  color: #2b579a;
+}
+
+.btn-attachment-action.btn-remove:hover {
+  background: rgba(220, 53, 69, 0.12);
+  color: #dc3545;
+}
+
+/* Card Attachment Pill Display (inside Note Cards) */
+.note-attachments-card-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e8ded4;
+}
+
+.note-attachments-summary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f7f2eb;
+  border: 1px solid #e0d2c5;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6d4a34;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.note-attachments-summary-btn:hover {
+  background: #ebd8c8;
+  color: #532909;
+}
+
+.note-attachments-expanded {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.note-attachment-row-mini {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #faf7f2;
+  border: 1px solid #ebd8c8;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.note-attachment-row-mini .mini-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+  font-weight: 500;
+  color: #3b2a22;
+}
+
+/* Task Attachment pill (To-Do List) */
+.todo-attachment-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #8b5e3c;
+  background: rgba(139, 94, 60, 0.1);
+  padding: 2px 7px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: background 0.2s ease;
+}
+
+.todo-attachment-indicator:hover {
+  background: rgba(139, 94, 60, 0.2);
+}
+
+.todo-attachment-btn {
+  background: none;
+  border: none;
+  color: #8b5e3c;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.todo-attachment-btn:hover {
+  background: #f4ece2;
+  color: #532909;
+}
+
+/* ---------- Attachment Preview Modal ---------- */
+.attachment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(20, 14, 10, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: modalFadeIn 0.25s ease;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.attachment-modal-container {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 90vw;
+  max-width: 920px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(229, 217, 207, 0.8);
+  animation: modalZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalZoomIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.attachment-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid #ebd8c8;
+  background: #faf7f2;
+}
+
+.attachment-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #532909;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
+  background: #fdfbf7;
+}
+
+.attachment-modal-img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.attachment-modal-iframe {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.attachment-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  background: #faf7f2;
+  border-top: 1px solid #ebd8c8;
+}

@@ -1,5 +1,48 @@
 const mongoose = require("mongoose");
 
+const attachmentSchema = new mongoose.Schema(
+  {
+    originalName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    storageKey: {
+      type: String,
+      required: true,
+    },
+    url: {
+      type: String,
+      required: true,
+    },
+    mimeType: {
+      type: String,
+      required: true,
+    },
+    size: {
+      type: Number,
+      required: true,
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    storageProvider: {
+      type: String,
+      default: "cloudinary",
+    },
+    resourceType: {
+      type: String,
+      default: "auto",
+    },
+    userEmail: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: true }
+);
+
 const todoSchema = new mongoose.Schema(
   {
     task: {
@@ -20,6 +63,11 @@ const todoSchema = new mongoose.Schema(
     taskDate: {
       type: String,
       required: true,
+    },
+
+    attachments: {
+      type: [attachmentSchema],
+      default: [],
     },
   },
   {

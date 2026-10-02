@@ -10,11 +10,14 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
+const path = require("path");
 require("dotenv").config();
 const Todo = require("./models/Todo");
 const User = require("./models/User");
 const Note = require("./models/Note");
 const jwt = require("jsonwebtoken");
+const { deleteFileFromStorage } = require("./services/storage");
+const attachmentRoutes = require("./routes/attachments");
 
 const app = express();
 
@@ -45,6 +48,10 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve local fallback uploads statically if in local development
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Resilient MongoDB connection handling (supports both standalone & Vercel serverless)
 const connectDB = async () => {
@@ -90,6 +97,9 @@ app.get("/", (req, res) => {
     status: "ok",
   });
 });
+
+// Attachment and file upload endpoints
+app.use("/api", attachmentRoutes);
 
 
 // ==================== REGISTER ====================
@@ -189,9 +199,14 @@ app.put("/api/todos/:id", async (req, res) => {
 });
 app.delete("/api/todos/:id", async (req, res) => {
   try {
-    await Todo.findByIdAndDelete(
-      req.params.id
-    );
+    const todo = await Todo.findById(req.params.id);
+    if (todo && todo.attachments && todo.attachments.length > 0) {
+      for (const att of todo.attachments) {
+        await deleteFileFromStorage(att.storageKey, att.storageProvider, att.resourceType);
+      }
+    }
+
+    await Todo.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       message: "Deleted",
@@ -348,6 +363,7 @@ app.post("/api/notes", async (req, res) => {
       category,
       deadline,
       userEmail,
+      attachments,
     } = req.body;
 
     const note = await Note.create({
@@ -356,6 +372,7 @@ app.post("/api/notes", async (req, res) => {
       category,
       deadline,
       userEmail,
+      attachments: Array.isArray(attachments) ? attachments : [],
     });
 
     res.status(201).json(note);
@@ -387,17 +404,25 @@ app.get("/api/notes/:email", async (req, res) => {
 
 app.put("/api/notes/:id", async (req, res) => {
   try {
-    const updatedNote =
-      await Note.findByIdAndUpdate(
-        req.params.id,
-        {
-          title: req.body.title,
-          description: req.body.description,
-          category: req.body.category,
-          deadline:req.body.deadline,
-        },
-        { new: true }
-      );
+    const updateData = {
+      title: req.body.title,
+      description: req.body.description,
+      category: req.body.category,
+      deadline: req.body.deadline,
+    };
+
+    if (req.body.attachments !== undefined) {
+      updateData.attachments = req.body.attachments;
+    }
+    if (req.body.status !== undefined) {
+      updateData.status = req.body.status;
+    }
+
+    const updatedNote = await Note.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
 
     res.status(200).json(updatedNote);
   } catch (error) {
@@ -413,6 +438,18 @@ app.put("/api/notes/:id", async (req, res) => {
 
 app.delete("/api/notes/:id", async (req, res) => {
   try {
+    const note = await Note.findById(req.params.id);
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    // Clean up all cloud attachments for this note
+    if (note.attachments && note.attachments.length > 0) {
+      for (const att of note.attachments) {
+        await deleteFileFromStorage(att.storageKey, att.storageProvider, att.resourceType);
+      }
+    }
+
     await Note.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
@@ -442,6 +479,19 @@ app.delete("/api/categories/:id", async (req, res) => {
       category: category.name,
       userEmail: category.userEmail,
     });
+
+    const categoryNotes = await Note.find({
+      category: category.name,
+      userEmail: category.userEmail,
+    });
+
+    for (const note of categoryNotes) {
+      if (note.attachments && note.attachments.length > 0) {
+        for (const att of note.attachments) {
+          await deleteFileFromStorage(att.storageKey, att.storageProvider, att.resourceType);
+        }
+      }
+    }
 
     await Note.deleteMany({
       category: category.name,
