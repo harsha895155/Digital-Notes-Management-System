@@ -696,7 +696,7 @@ deadline-date{
   object-fit: contain;
 }
 
-.Gnapika-title {
+.MindDesk-title {
   margin: 0;
   color: #5c4033;
   font-size: 42px;
@@ -706,6 +706,7 @@ deadline-date{
   line-height: 0.9;
 }
 
+.MindDesk-tagline,
 .Gnapika-tagline {
   color: #8b6f47;
   font-size: 15px;

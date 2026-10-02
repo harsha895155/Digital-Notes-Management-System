@@ -75,10 +75,16 @@ function Register() {
         </div>
 
         <div className="form-section">
+          <div className="text-center mb-2">
+            <span className="badge rounded-pill" style={{ background: '#f5ede4', color: '#5c4033', padding: '6px 14px', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
+              <i className="bi bi-journal-text me-1 text-warning"></i> MindDesk
+            </span>
+          </div>
+
           <h2 className="welcome">Create Account</h2>
 
           <p className="subtitle">
-            Start organizing your notes today
+            Start organizing your notes today with MindDesk
           </p>
 
           <div className="input-group custom-input mb-3">

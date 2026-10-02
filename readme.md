@@ -1,4 +1,6 @@
-# Gnapika (StudyHub) 📝 — Production MERN Web Application
+# MindDesk 📝 — Production Digital Notes & Task Management System
+
+**Official Platform Email:** `minddesk43@gmail.com`
 
 A full-stack, production-ready Note-taking and Task Management web application built with React 19, Vite, Node.js, Express, and MongoDB Atlas.
 

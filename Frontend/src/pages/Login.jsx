@@ -60,6 +60,12 @@ function Login() {
         </div>
 
         <div className="form-section">
+          <div className="text-center mb-2">
+            <span className="badge rounded-pill" style={{ background: '#f5ede4', color: '#5c4033', padding: '6px 14px', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
+              <i className="bi bi-journal-text me-1 text-warning"></i> MindDesk
+            </span>
+          </div>
+
           <h2 className="welcome">Welcome Back!</h2>
 
           <p className="subtitle">
@@ -74,7 +80,7 @@ function Login() {
             <input
               type="email"
               className="form-control border-0"
-              placeholder="Email"
+              placeholder="minddesk43@gmail.com"
               value={email}
               onChange={(e) =>
                 setEmail(e.target.value)
