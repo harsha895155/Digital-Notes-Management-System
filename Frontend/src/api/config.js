@@ -1,15 +1,15 @@
 // Centralized API configuration for production and development
 const getBaseUrl = () => {
-  // In local development on localhost, default to local backend on port 5000
-  if (
-    import.meta.env.DEV &&
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
-    import.meta.env.VITE_USE_REMOTE !== "true"
-  ) {
-    return import.meta.env.VITE_DEV_API_URL || "http://localhost:5000";
+  // If in browser environment
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    // When visiting from localhost or 127.0.0.1, ALWAYS use local backend on port 5000
+    if (host === "localhost" || host === "127.0.0.1") {
+      return import.meta.env.VITE_DEV_API_URL || "http://localhost:5000";
+    }
   }
 
+  // Production backend URL
   return (
     import.meta.env.VITE_API_URL ||
     "https://digital-notes-management-system.onrender.com"

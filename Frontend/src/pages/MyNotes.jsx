@@ -143,16 +143,25 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
     }
 
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const userEmail = storedUser?.email;
+
+      if (!userEmail) {
+        toast.warning(
+          "Your session appears to have expired. Please login again.",
+          "Session Expired"
+        );
+        return;
+      }
 
       if (editId) {
         const res = await axios.put(
           `${API_BASE_URL}/api/notes/${editId}`,
           {
-            title,
-            description: content,
+            title: title.trim(),
+            description: content.trim(),
             category,
-            deadline,
+            deadline: deadline || null,
             attachments: editAttachments,
           },
           { headers: getAuthHeaders() }
@@ -168,11 +177,11 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
         const res = await axios.post(
           `${API_BASE_URL}/api/notes`,
           {
-            title,
-            description: content,
+            title: title.trim(),
+            description: content.trim(),
             category,
-            deadline,
-            userEmail: user.email,
+            deadline: deadline || null,
+            userEmail,
             attachments: stagedAttachments,
           },
           { headers: getAuthHeaders() }
@@ -194,14 +203,18 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
       if (fetchTotalNotes) await fetchTotalNotes();
       if (fetchUpcomingNotes) await fetchUpcomingNotes();
     } catch (error) {
-      console.log("FULL ERROR:", error);
-      toast.error(
+      console.error("FULL ERROR:", error);
+      const serverMsg =
         error.response?.data?.message ||
-          error.response?.data?.error ||
-          error.message ||
-          "Failed to save note",
-        "Error Saving Note"
-      );
+        error.response?.data?.error;
+      const isNetworkErr = error.message === "Network Error" || !error.response;
+      const displayMsg =
+        serverMsg ||
+        (isNetworkErr
+          ? "Cannot connect to server. Please ensure the backend is running and reachable."
+          : error.message || "Failed to save note");
+
+      toast.error(displayMsg, "Error Saving Note");
     }
   };
 
