@@ -72,75 +72,88 @@ function Login() {
             <div className="md-auth-subtitle">Sign in to continue to your workspace</div>
           </div>
 
-          {/* Email */}
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="login-email">Email address</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-envelope" />
-              <input
-                id="login-email"
-                type="email"
-                className="md-form-control"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
-              />
-            </div>
-          </div>
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} autoComplete="off" noValidate>
+            {/* Hidden dummy inputs to consume browser autofill heuristic */}
+            <input type="text" name="fake_email_prevent" style={{ display: "none" }} tabIndex="-1" autoComplete="off" />
+            <input type="password" name="fake_password_prevent" style={{ display: "none" }} tabIndex="-1" autoComplete="new-password" />
 
-          {/* Password */}
-          <div className="md-form-group">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-              <label className="md-form-label" htmlFor="login-password" style={{ marginBottom: 0 }}>Password</label>
-              <Link to="/change-password" className="md-auth-link" style={{ fontSize: "0.8rem" }}>
-                Forgot password?
-              </Link>
+            {/* Email */}
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="login-email">Email address</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-envelope" />
+                <input
+                  id="login-email"
+                  name="user_login_email"
+                  type="email"
+                  className="md-form-control"
+                  placeholder="you@example.com"
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
+                />
+              </div>
             </div>
-            <div className="md-form-control-icon" style={{ position: "relative" }}>
-              <i className="bi bi-lock" />
-              <input
-                id="login-password"
-                type={showPw ? "text" : "password"}
-                className="md-form-control"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
-                style={{ paddingRight: "42px" }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw(!showPw)}
-                style={{
-                  position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
-                  background: "none", border: "none", cursor: "pointer", color: "var(--md-text-muted)", padding: "0"
-                }}
-              >
-                <i className={`bi ${showPw ? "bi-eye-slash" : "bi-eye"}`} />
-              </button>
-            </div>
-          </div>
 
-          {/* Submit */}
-          <button
-            className="md-btn md-btn-primary md-btn-lg"
-            style={{ width: "100%", marginTop: "8px", marginBottom: "20px" }}
-            onClick={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="md-spinner" style={{ width: 18, height: 18 }} />
-                Signing in...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-box-arrow-in-right" />
-                Sign In
-              </>
-            )}
-          </button>
+            {/* Password */}
+            <div className="md-form-group">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <label className="md-form-label" htmlFor="login-password" style={{ marginBottom: 0 }}>Password</label>
+                <Link to="/change-password" className="md-auth-link" style={{ fontSize: "0.8rem" }}>
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="md-form-control-icon">
+                <i className="bi bi-lock" />
+                <input
+                  id="login-password"
+                  name="user_login_password"
+                  type={showPw ? "text" : "password"}
+                  className="md-form-control"
+                  placeholder="Enter your password"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
+                  style={{ paddingRight: "46px" }}
+                />
+                <button
+                  type="button"
+                  className="md-pw-toggle-btn"
+                  onClick={() => setShowPw(!showPw)}
+                  title={showPw ? "Hide password" : "Show password"}
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                >
+                  <i className={`bi ${showPw ? "bi-eye-slash-fill" : "bi-eye-fill"}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="md-btn md-btn-primary md-btn-lg"
+              style={{ width: "100%", marginTop: "8px", marginBottom: "20px" }}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="md-spinner" style={{ width: 18, height: 18 }} />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-box-arrow-in-right" />
+                  Sign In
+                </>
+              )}
+            </button>
+          </form>
 
           <p style={{ textAlign: "center", fontSize: "0.88rem", color: "var(--md-text-muted)" }}>
             Don't have an account?{" "}

@@ -134,8 +134,53 @@ input, select, textarea { font-family: inherit; }
 .md-form-control:focus { border-color: var(--md-primary); box-shadow: 0 0 0 3px rgba(139,79,39,0.12); }
 .md-form-control::placeholder { color: var(--md-text-muted); opacity: 0.7; }
 .md-form-control-icon { position: relative; }
-.md-form-control-icon i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--md-text-muted); font-size: 0.95rem; pointer-events: none; }
+.md-form-control-icon > i:first-child { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--md-text-muted); font-size: 0.95rem; pointer-events: none; }
 .md-form-control-icon .md-form-control { padding-left: 38px; }
+
+/* Dedicated Password Show/Hide Toggle Button */
+.md-pw-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--md-text-muted);
+  z-index: 10;
+  transition: all var(--md-transition);
+  padding: 0;
+}
+.md-pw-toggle-btn:hover {
+  background: var(--md-beige);
+  color: var(--md-text-dark);
+}
+.md-pw-toggle-btn i {
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  top: auto !important;
+  pointer-events: auto !important;
+  font-size: 1.05rem !important;
+  color: inherit !important;
+}
+
+/* Prevent browser blue autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #FFFDF8 inset !important;
+  -webkit-text-fill-color: var(--md-text-dark) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 .md-input-row { display: flex; gap: 10px; }
 .md-input-row .md-form-control { flex: 1; }
 

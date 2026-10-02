@@ -567,7 +567,7 @@ export default function Profile() {
                 />
               </div>
 
-              <form onSubmit={handleSaveProfile}>
+              <form onSubmit={handleSaveProfile} autoComplete="off">
                 <div className="p-4" style={{ background: "var(--md-card)", maxHeight: "75vh", overflowY: "auto" }}>
                   <div className="md-form-group" style={{ marginBottom: "16px" }}>
                     <label className="md-form-label" htmlFor="edit-fullname">

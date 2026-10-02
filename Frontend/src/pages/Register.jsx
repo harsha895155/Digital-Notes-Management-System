@@ -10,6 +10,8 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showCpw, setShowCpw] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -75,85 +77,127 @@ function Register() {
             <div className="md-auth-subtitle">Start organizing your notes for free</div>
           </div>
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="reg-name">Full Name</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-person" />
-              <input
-                id="reg-name"
-                type="text"
-                className="md-form-control"
-                placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-          </div>
+          <form onSubmit={(e) => { e.preventDefault(); handleRegister(); }} autoComplete="off" noValidate>
+            {/* Dummy hidden inputs to prevent automatic browser autofill */}
+            <input type="text" name="fake_reg_email" style={{ display: "none" }} tabIndex="-1" autoComplete="off" />
+            <input type="password" name="fake_reg_pw" style={{ display: "none" }} tabIndex="-1" autoComplete="new-password" />
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="reg-email">Email address</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-envelope" />
-              <input
-                id="reg-email"
-                type="email"
-                className="md-form-control"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="reg-name">Full Name</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-person" />
+                <input
+                  id="reg-name"
+                  name="user_reg_fullname"
+                  type="text"
+                  className="md-form-control"
+                  placeholder="John Doe"
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="reg-pw">Password</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-lock" />
-              <input
-                id="reg-pw"
-                type="password"
-                className="md-form-control"
-                placeholder="Create a strong password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="reg-email">Email address</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-envelope" />
+                <input
+                  id="reg-email"
+                  name="user_reg_email"
+                  type="email"
+                  className="md-form-control"
+                  placeholder="you@example.com"
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="reg-cpw">Confirm Password</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-shield-lock" />
-              <input
-                id="reg-cpw"
-                type="password"
-                className="md-form-control"
-                placeholder="Repeat your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleRegister(); }}
-              />
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="reg-pw">Password</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-lock" />
+                <input
+                  id="reg-pw"
+                  name="user_reg_password"
+                  type={showPw ? "text" : "password"}
+                  className="md-form-control"
+                  placeholder="Create a strong password"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ paddingRight: "46px" }}
+                />
+                <button
+                  type="button"
+                  className="md-pw-toggle-btn"
+                  onClick={() => setShowPw(!showPw)}
+                  title={showPw ? "Hide password" : "Show password"}
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                >
+                  <i className={`bi ${showPw ? "bi-eye-slash-fill" : "bi-eye-fill"}`} />
+                </button>
+              </div>
             </div>
-          </div>
 
-          <button
-            className="md-btn md-btn-primary md-btn-lg"
-            style={{ width: "100%", marginTop: "4px", marginBottom: "20px" }}
-            onClick={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="md-spinner" style={{ width: 18, height: 18 }} />
-                Creating Account...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-person-plus" />
-                Create Account
-              </>
-            )}
-          </button>
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="reg-cpw">Confirm Password</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-shield-lock" />
+                <input
+                  id="reg-cpw"
+                  name="user_reg_cpassword"
+                  type={showCpw ? "text" : "password"}
+                  className="md-form-control"
+                  placeholder="Repeat your password"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleRegister(); }}
+                  style={{ paddingRight: "46px" }}
+                />
+                <button
+                  type="button"
+                  className="md-pw-toggle-btn"
+                  onClick={() => setShowCpw(!showCpw)}
+                  title={showCpw ? "Hide password" : "Show password"}
+                  aria-label={showCpw ? "Hide password" : "Show password"}
+                >
+                  <i className={`bi ${showCpw ? "bi-eye-slash-fill" : "bi-eye-fill"}`} />
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="md-btn md-btn-primary md-btn-lg"
+              style={{ width: "100%", marginTop: "4px", marginBottom: "20px" }}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="md-spinner" style={{ width: 18, height: 18 }} />
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-person-check" />
+                  Create Account
+                </>
+              )}
+            </button>
+          </form>
 
           <p style={{ textAlign: "center", fontSize: "0.88rem", color: "var(--md-text-muted)" }}>
             Already have an account?{" "}

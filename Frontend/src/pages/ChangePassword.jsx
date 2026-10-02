@@ -10,6 +10,9 @@ function ChangePassword() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChangePassword = async () => {
@@ -70,85 +73,137 @@ function ChangePassword() {
             <div className="md-auth-subtitle">Update your account password securely</div>
           </div>
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="cp-email">Email Address</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-envelope" />
-              <input
-                id="cp-email"
-                type="email"
-                className="md-form-control"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
+          <form onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }} autoComplete="off" noValidate>
+            {/* Dummy hidden inputs to prevent automatic browser autofill */}
+            <input type="text" name="fake_cp_email" style={{ display: "none" }} tabIndex="-1" autoComplete="off" />
+            <input type="password" name="fake_cp_pw" style={{ display: "none" }} tabIndex="-1" autoComplete="new-password" />
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="cp-current">Current Password</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-lock" />
-              <input
-                id="cp-current"
-                type="password"
-                className="md-form-control"
-                placeholder="Your current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="cp-email">Email Address</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-envelope" />
+                <input
+                  id="cp-email"
+                  name="user_cp_email"
+                  type="email"
+                  className="md-form-control"
+                  placeholder="your@email.com"
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="cp-new">New Password</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-key" />
-              <input
-                id="cp-new"
-                type="password"
-                className="md-form-control"
-                placeholder="Create a new strong password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="cp-current">Current Password</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-lock" />
+                <input
+                  id="cp-current"
+                  name="user_cp_current"
+                  type={showCurrent ? "text" : "password"}
+                  className="md-form-control"
+                  placeholder="Your current password"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  style={{ paddingRight: "46px" }}
+                />
+                <button
+                  type="button"
+                  className="md-pw-toggle-btn"
+                  onClick={() => setShowCurrent(!showCurrent)}
+                  title={showCurrent ? "Hide password" : "Show password"}
+                  aria-label={showCurrent ? "Hide password" : "Show password"}
+                >
+                  <i className={`bi ${showCurrent ? "bi-eye-slash-fill" : "bi-eye-fill"}`} />
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="md-form-group">
-            <label className="md-form-label" htmlFor="cp-confirm">Confirm New Password</label>
-            <div className="md-form-control-icon">
-              <i className="bi bi-shield-lock" />
-              <input
-                id="cp-confirm"
-                type="password"
-                className="md-form-control"
-                placeholder="Repeat the new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
-              />
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="cp-new">New Password</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-key" />
+                <input
+                  id="cp-new"
+                  name="user_cp_new"
+                  type={showNew ? "text" : "password"}
+                  className="md-form-control"
+                  placeholder="Create a new strong password"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={{ paddingRight: "46px" }}
+                />
+                <button
+                  type="button"
+                  className="md-pw-toggle-btn"
+                  onClick={() => setShowNew(!showNew)}
+                  title={showNew ? "Hide password" : "Show password"}
+                  aria-label={showNew ? "Hide password" : "Show password"}
+                >
+                  <i className={`bi ${showNew ? "bi-eye-slash-fill" : "bi-eye-fill"}`} />
+                </button>
+              </div>
             </div>
-          </div>
 
-          <button
-            className="md-btn md-btn-primary md-btn-lg"
-            style={{ width: "100%", marginTop: "4px", marginBottom: "20px" }}
-            onClick={handleChangePassword}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="md-spinner" style={{ width: 18, height: 18 }} />
-                Updating...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-shield-check" />
-                Update Password
-              </>
-            )}
-          </button>
+            <div className="md-form-group">
+              <label className="md-form-label" htmlFor="cp-confirm">Confirm New Password</label>
+              <div className="md-form-control-icon">
+                <i className="bi bi-shield-lock" />
+                <input
+                  id="cp-confirm"
+                  name="user_cp_confirm"
+                  type={showConfirm ? "text" : "password"}
+                  className="md-form-control"
+                  placeholder="Repeat the new password"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
+                  style={{ paddingRight: "46px" }}
+                />
+                <button
+                  type="button"
+                  className="md-pw-toggle-btn"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  title={showConfirm ? "Hide password" : "Show password"}
+                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                >
+                  <i className={`bi ${showConfirm ? "bi-eye-slash-fill" : "bi-eye-fill"}`} />
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="md-btn md-btn-primary md-btn-lg"
+              style={{ width: "100%", marginTop: "4px", marginBottom: "20px" }}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="md-spinner" style={{ width: 18, height: 18 }} />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-check2-circle" />
+                  Update Password
+                </>
+              )}
+            </button>
+          </form>
 
           <p style={{ textAlign: "center", fontSize: "0.88rem", color: "var(--md-text-muted)" }}>
             Remember your password?{" "}
