@@ -262,6 +262,43 @@
   color: white !important;
 }
 
+.contact-email-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #ffffff !important;
+  color: #5c4033 !important;
+  border: 1.5px solid #d4c3b3 !important;
+  padding: 13px 26px !important;
+  border-radius: 14px !important;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none !important;
+  box-shadow: 0 8px 24px rgba(92, 64, 51, 0.12),
+              0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contact-email-btn:hover {
+  background-color: #fbf7f2 !important;
+  color: #3d2920 !important;
+  border-color: #8b5e3c !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(92, 64, 51, 0.18),
+              0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.contact-email-btn i {
+  color: #8b5e3c;
+  font-size: 1.15rem;
+  transition: transform 0.2s ease;
+}
+
+.contact-email-btn:hover i {
+  transform: scale(1.15);
+  color: #5c4033;
+}
+
 /* ================= FEATURES ================= */
 
 .feature-row {

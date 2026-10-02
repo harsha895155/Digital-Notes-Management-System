@@ -33,11 +33,11 @@ function Welcome(){
          </Link>
          <a
            href="mailto:minddesk43@gmail.com"
-           className="btn btn-outline-light rounded-pill px-4 py-2"
-           style={{ border: '1px solid rgba(255,255,255,0.4)', backdropFilter: 'blur(8px)' }}
+           className="contact-email-btn"
+           title="Send email to MindDesk"
          >
-           <i className="bi bi-envelope-fill me-2"></i>
-           minddesk43@gmail.com
+           <i className="bi bi-envelope-fill"></i>
+           <span>minddesk43@gmail.com</span>
          </a>
        </div>
  <div className="feature-row">
