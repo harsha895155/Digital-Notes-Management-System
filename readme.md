@@ -71,7 +71,7 @@ MongoDB Atlas (Cloud Database Cluster)
 ### Frontend (`Frontend/.env`)
 | Variable | Description | Example / Default |
 |---|---|---|
-| `VITE_API_URL` | Base URL of the deployed Express backend | `https://gnapika-backend.onrender.com` |
+| `VITE_API_URL` | Base URL of the deployed Express backend | `https://digital-notes-management-system.onrender.com` |
 
 ---
 
