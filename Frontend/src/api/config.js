@@ -4,21 +4,13 @@ const getBaseUrl = () => {
     const host = window.location.hostname;
 
     // When visiting from localhost or 127.0.0.1, connect to local backend on port 5000
+    // Using 127.0.0.1 avoids IPv6 (::1) vs IPv4 (127.0.0.1) resolution mismatches on Windows
     if (host === "localhost" || host === "127.0.0.1") {
-      return (
-        import.meta.env.VITE_DEV_API_URL ||
-        `${window.location.protocol}//${host}:5000`
-      );
-    }
-
-    // When running on Vercel (*.vercel.app), use same-origin relative API path ("")
-    // Vercel rewrites will proxy /api/* directly to the backend, preventing all cross-origin blocks
-    if (host.endsWith(".vercel.app")) {
-      return "";
+      return import.meta.env.VITE_DEV_API_URL || "http://127.0.0.1:5000";
     }
   }
 
-  // Production backend URL fallback
+  // Production backend URL fallback (Render backend with full CORS & 10MB upload support)
   return (
     import.meta.env.VITE_API_URL ||
     "https://digital-notes-management-system.onrender.com"

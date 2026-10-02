@@ -507,9 +507,32 @@ const PORT = process.env.PORT || 5000;
 
 // Only start standalone HTTP server when executed directly (not when imported as a serverless function)
 if (require.main === module) {
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  // On Render/production, bind to 0.0.0.0 as required by container hosting
+  // In local development, bind to dual-stack "::" with fallback to "0.0.0.0"
+  const preferredHost =
+    process.env.NODE_ENV === "production" || process.env.RENDER ? "0.0.0.0" : "::";
+
+  const startServer = (host) => {
+    const s = app.listen(PORT, host, () => {
+      console.log(`Server running on port ${PORT} (${host})`);
+    });
+    s.on("error", (err) => {
+      if (
+        host !== "0.0.0.0" &&
+        (err.code === "EAFNOSUPPORT" || err.code === "EADDRNOTAVAIL")
+      ) {
+        console.log(`Fallback to 0.0.0.0 due to ${err.code}`);
+        app.listen(PORT, "0.0.0.0", () => {
+          console.log(`Server running on port ${PORT} (0.0.0.0 fallback)`);
+        });
+      } else {
+        console.error("Server listen error:", err);
+      }
+    });
+    return s;
+  };
+
+  const server = startServer(preferredHost);
 
   // Graceful shutdown
   process.on("SIGTERM", () => {
