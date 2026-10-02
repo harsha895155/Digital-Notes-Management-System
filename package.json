@@ -1,5 +1,17 @@
 {
+  "name": "gnapika-digital-notes",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd Frontend && npm install && npm run build",
+    "start": "node Backend/server.js"
+  },
   "dependencies": {
-    "jsonwebtoken": "^9.0.3"
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.2"
   }
 }

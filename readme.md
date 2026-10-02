@@ -95,16 +95,15 @@ MongoDB Atlas (Cloud Database Cluster)
    curl https://<YOUR-RENDER-BACKEND>.onrender.com/health
    ```
 
-### 2. Frontend Deployment (Vercel)
+### 2. Full-Stack Deployment on Vercel (Frontend + Serverless Backend)
 1. Go to [Vercel Dashboard](https://vercel.com/new) and import your GitHub repository.
-2. Configure project settings:
-   - **Framework Preset**: `Vite`
-   - **Root Directory**: `Frontend`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-3. Add Environment Variable:
-   - `VITE_API_URL`: `https://<YOUR-RENDER-BACKEND>.onrender.com`
-4. Click **Deploy**. Vercel will automatically build the assets and configure client-side SPA routing rewrites using [`vercel.json`](./Frontend/vercel.json).
+2. Ensure the **Root Directory** is set to `./` (the repository root).
+3. Vercel automatically detects [`vercel.json`](./vercel.json) to build the Vite frontend and deploy the Express backend as serverless functions.
+4. Add Environment Variables in your Vercel Project Settings:
+   - `MONGO_URI`: `mongodb+srv://...` (Your MongoDB Atlas connection string)
+   - `JWT_SECRET`: `your_jwt_secret_key`
+   - *(Optional)* `VITE_API_URL`: Leave empty to use the unified Vercel backend directly on the same domain (recommended), or set your Render URL.
+5. Click **Deploy**. Both the React frontend and Express serverless backend will be live on your Vercel URL!
 
 ---
 

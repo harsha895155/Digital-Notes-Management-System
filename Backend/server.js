@@ -1,5 +1,9 @@
-const dns = require("dns");
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+try {
+  const dns = require("dns");
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch (err) {
+  // Ignored in environments where custom DNS servers are restricted
+}
 
 const Category = require("./models/Category");
 const express = require("express");
@@ -42,14 +46,33 @@ app.use(
 
 app.use(express.json());
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
+// Resilient MongoDB connection handling (supports both standalone & Vercel serverless)
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  if (!process.env.MONGO_URI) {
+    console.error("Warning: MONGO_URI is not set in environment variables");
+    return;
+  }
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB Cloud Connected Successfully");
-  })
-  .catch((error) => {
-    console.log("MongoDB Connection Failed", error);
-  });
+  } catch (error) {
+    console.error("MongoDB Connection Failed", error);
+  }
+};
+
+// Initiate connection immediately
+if (process.env.MONGO_URI) {
+  connectDB();
+}
+
+// Middleware to ensure DB connection is active for each request
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState < 1 && process.env.MONGO_URI) {
+    await connectDB();
+  }
+  next();
+});
 
 // Health check endpoint for monitoring (Render, Railway, UptimeRobot)
 app.get("/health", (req, res) => {
@@ -445,17 +468,22 @@ app.delete("/api/categories/:id", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Only start standalone HTTP server when executed directly (not when imported as a serverless function)
+if (require.main === module) {
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received, shutting down gracefully...");
-  server.close(() => {
-    mongoose.connection.close(false, () => {
-      console.log("MongoDB connection closed.");
-      process.exit(0);
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM received, shutting down gracefully...");
+    server.close(() => {
+      mongoose.connection.close(false, () => {
+        console.log("MongoDB connection closed.");
+        process.exit(0);
+      });
     });
   });
-});
+}
+
+module.exports = app;
