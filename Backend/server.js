@@ -16,7 +16,8 @@ const Todo = require("./models/Todo");
 const User = require("./models/User");
 const Note = require("./models/Note");
 const jwt = require("jsonwebtoken");
-const { deleteFileFromStorage } = require("./services/storage");
+const { upload, uploadFileToStorage, deleteFileFromStorage } = require("./services/storage");
+const authMiddleware = require("./middleware/auth");
 const attachmentRoutes = require("./routes/attachments");
 
 const app = express();
@@ -346,15 +347,247 @@ app.post("/api/login", async (req, res) => {
     res.status(200).json({
       message: "Login Successful",
       token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-      },
+      user: getSafeUserData(user),
     });
   } catch (error) {
     res.status(500).json({
       message: "Login Failed",
+      error: error.message,
+    });
+  }
+});
+
+
+// Helper to serialize user info safely without sensitive fields
+const getSafeUserData = (user) => ({
+  id: user._id,
+  fullName: user.fullName,
+  email: user.email,
+  username: user.username || "",
+  phone: user.phone || "",
+  bio: user.bio || "",
+  profileImage: user.profileImage || "",
+  status: user.status || "active",
+  createdAt: user.createdAt,
+});
+
+
+// ==================== USER PROFILE ====================
+
+// GET /api/profile - Fetch authenticated user profile & real activity stats
+app.get("/api/profile", authMiddleware, async (req, res) => {
+  try {
+    const user =
+      (await User.findById(req.user.id).select("-password")) ||
+      (await User.findOne({ email: req.user.email }).select("-password"));
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Calculate real activity metrics from database
+    const totalNotes = await Note.countDocuments({ userEmail: user.email });
+    const distinctCategories = await Note.distinct("category", { userEmail: user.email });
+    const categoriesCount = distinctCategories.filter(Boolean).length;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todos = await Todo.find({ userEmail: user.email, taskDate: todayStr });
+    const completedTasks = todos.filter((t) => t.completed).length;
+
+    const allNotes = await Note.find({ userEmail: user.email });
+    const today = new Date();
+    const nextFiveDays = new Date();
+    nextFiveDays.setDate(today.getDate() + 5);
+    const upcomingDeadlines = allNotes.filter(
+      (n) => n.deadline && new Date(n.deadline) >= today && new Date(n.deadline) <= nextFiveDays
+    ).length;
+
+    res.status(200).json({
+      user: getSafeUserData(user),
+      stats: {
+        totalNotes,
+        categories: categoriesCount,
+        todayTasks: todos.length,
+        completedTasks,
+        upcomingDeadlines,
+      },
+    });
+  } catch (error) {
+    console.error("GET /api/profile error:", error);
+    res.status(500).json({
+      message: "Failed to retrieve profile",
+      error: error.message,
+    });
+  }
+});
+
+// PUT /api/profile - Update personal information
+app.put("/api/profile", authMiddleware, async (req, res) => {
+  try {
+    const user =
+      (await User.findById(req.user.id)) ||
+      (await User.findOne({ email: req.user.email }));
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { fullName, username, phone, bio } = req.body;
+
+    if (fullName !== undefined) {
+      const trimmedName = String(fullName).trim();
+      if (!trimmedName || trimmedName.length < 2) {
+        return res.status(400).json({ message: "Full Name must be at least 2 characters." });
+      }
+      if (trimmedName.length > 100) {
+        return res.status(400).json({ message: "Full Name cannot exceed 100 characters." });
+      }
+      user.fullName = trimmedName;
+    }
+
+    if (username !== undefined) {
+      const trimmedUsername = String(username).trim();
+      if (trimmedUsername && trimmedUsername.length > 50) {
+        return res.status(400).json({ message: "Username cannot exceed 50 characters." });
+      }
+      user.username = trimmedUsername;
+    }
+
+    if (phone !== undefined) {
+      const trimmedPhone = String(phone).trim();
+      if (trimmedPhone && trimmedPhone.length > 25) {
+        return res.status(400).json({ message: "Phone number cannot exceed 25 characters." });
+      }
+      user.phone = trimmedPhone;
+    }
+
+    if (bio !== undefined) {
+      const trimmedBio = String(bio).trim();
+      if (trimmedBio && trimmedBio.length > 500) {
+        return res.status(400).json({ message: "Bio cannot exceed 500 characters." });
+      }
+      user.bio = trimmedBio;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: getSafeUserData(user),
+    });
+  } catch (error) {
+    console.error("PUT /api/profile error:", error);
+    res.status(500).json({
+      message: "Failed to update profile",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/profile/avatar - Upload profile photo
+app.post(
+  "/api/profile/avatar",
+  authMiddleware,
+  (req, res, next) => {
+    upload.single("avatar")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ message: "Image must be smaller than 5 MB." });
+        }
+        return res.status(400).json({ message: err.message || "Avatar upload failed." });
+      }
+      next();
+    });
+  },
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Please select an image file to upload." });
+      }
+
+      const validMimes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+      if (!validMimes.includes(req.file.mimetype)) {
+        return res.status(400).json({
+          message: "Please select a JPG, PNG, or WEBP image.",
+        });
+      }
+
+      if (req.file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ message: "Image must be smaller than 5 MB." });
+      }
+
+      const user =
+        (await User.findById(req.user.id)) ||
+        (await User.findOne({ email: req.user.email }));
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Upload to Cloudinary or fallback storage
+      const uploaded = await uploadFileToStorage(req.file);
+
+      // Clean up previous avatar if stored
+      if (user.profileImageStorageKey) {
+        deleteFileFromStorage(
+          user.profileImageStorageKey,
+          user.profileImageProvider,
+          "image"
+        ).catch((delErr) => console.warn("Failed to delete old avatar:", delErr));
+      }
+
+      user.profileImage = uploaded.url;
+      user.profileImageStorageKey = uploaded.storageKey;
+      user.profileImageProvider = uploaded.storageProvider;
+      await user.save();
+
+      res.status(200).json({
+        message: "Profile photo updated successfully",
+        profileImage: user.profileImage,
+        user: getSafeUserData(user),
+      });
+    } catch (error) {
+      console.error("POST /api/profile/avatar error:", error);
+      res.status(500).json({
+        message: "Failed to upload avatar",
+        error: error.message,
+      });
+    }
+  }
+);
+
+// DELETE /api/profile/avatar - Remove profile photo
+app.delete("/api/profile/avatar", authMiddleware, async (req, res) => {
+  try {
+    const user =
+      (await User.findById(req.user.id)) ||
+      (await User.findOne({ email: req.user.email }));
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.profileImageStorageKey) {
+      deleteFileFromStorage(
+        user.profileImageStorageKey,
+        user.profileImageProvider,
+        "image"
+      ).catch((delErr) => console.warn("Failed to delete avatar:", delErr));
+    }
+
+    user.profileImage = "";
+    user.profileImageStorageKey = "";
+    user.profileImageProvider = "";
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile photo removed successfully",
+      user: getSafeUserData(user),
+    });
+  } catch (error) {
+    console.error("DELETE /api/profile/avatar error:", error);
+    res.status(500).json({
+      message: "Failed to remove avatar",
       error: error.message,
     });
   }

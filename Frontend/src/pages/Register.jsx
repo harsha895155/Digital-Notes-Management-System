@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import diary from "./image.png";
 import API_BASE_URL from "../api/config";
 import { toast } from "../context/ToastContext";
 
 function Register() {
   const navigate = useNavigate();
-
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,34 +17,16 @@ function Register() {
       toast.warning("Please fill in all fields before registering.", "Incomplete Form");
       return;
     }
-
     if (password !== confirmPassword) {
       toast.error("Passwords do not match. Please check and try again.", "Password Mismatch");
       return;
     }
-
     try {
       setLoading(true);
-      const res = await axios.post(
-       `${API_BASE_URL}/api/register`,
-        {
-          fullName,
-          email,
-          password,
-          confirmPassword,
-        }
-      );
-
+      const res = await axios.post(`${API_BASE_URL}/api/register`, { fullName, email, password, confirmPassword });
       toast.success(res.data.message || "Registration Successful!", "Account Created");
-
-      setFullName("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
+      setFullName(""); setEmail(""); setPassword(""); setConfirmPassword("");
+      setTimeout(() => { navigate("/login"); }, 1000);
     } catch (err) {
       toast.error(
         err.response?.data?.message || err.message || "Unable to complete registration.",
@@ -58,122 +38,126 @@ function Register() {
   };
 
   return (
-    <div className="login-bg d-flex justify-content-center align-items-center">
-      <div className="login-card">
-        <div
-          className="top-section"
-          style={{
-            background:
-              "linear-gradient(135deg, #f7f2eb 0%, #efe3d5 50%, #f5ece3 100%)",
-          }}
-        >
-          <img
-            src={diary}
-            alt="Diary"
-            className="diary-img"
-          />
+    <div className="md-auth-page">
+      <div className="md-auth-container">
+        {/* Left Panel */}
+        <div className="md-auth-left">
+          <div className="md-auth-brand-icon">📓</div>
+          <div className="md-auth-brand-name">MindDesk</div>
+          <div className="md-auth-brand-sub">Digital Notes System</div>
+          <p className="md-auth-tagline">
+            Join thousands of users who organize their ideas and boost productivity with MindDesk.
+          </p>
+          <div className="md-auth-features">
+            <div className="md-auth-feature">
+              <i className="bi bi-journal-text" />
+              Organize notes in folders
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-alarm" />
+              Track deadlines effortlessly
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-cloud-upload" />
+              Attach files to notes & tasks
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-shield-check" />
+              Secure with JWT authentication
+            </div>
+          </div>
         </div>
 
-        <div className="form-section">
-          <div className="text-center mb-2">
-            <span className="badge rounded-pill" style={{ background: '#f5ede4', color: '#5c4033', padding: '6px 14px', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
-              <i className="bi bi-journal-text me-1 text-warning"></i> MindDesk
-            </span>
+        {/* Right Panel */}
+        <div className="md-auth-right">
+          <div className="md-auth-right-header">
+            <div className="md-auth-title">Create account ✨</div>
+            <div className="md-auth-subtitle">Start organizing your notes for free</div>
           </div>
 
-          <h2 className="welcome">Create Account</h2>
-
-          <p className="subtitle">
-            Start organizing your notes today with MindDesk
-          </p>
-
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-person"></i>
-            </span>
-
-            <input
-              type="text"
-              className="form-control border-0"
-              placeholder="Full Name"
-              value={fullName}
-              onChange={(e) =>
-                setFullName(e.target.value)
-              }
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="reg-name">Full Name</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-person" />
+              <input
+                id="reg-name"
+                type="text"
+                className="md-form-control"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-envelope"></i>
-            </span>
-
-            <input
-              type="email"
-              className="form-control border-0"
-              placeholder="Email"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="reg-email">Email address</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-envelope" />
+              <input
+                id="reg-email"
+                type="email"
+                className="md-form-control"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-lock"></i>
-            </span>
-
-            <input
-              type="password"
-              className="form-control border-0"
-              placeholder="Password"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="reg-pw">Password</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-lock" />
+              <input
+                id="reg-pw"
+                type="password"
+                className="md-form-control"
+                placeholder="Create a strong password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="input-group custom-input mb-4">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-shield-lock"></i>
-            </span>
-
-            <input
-              type="password"
-              className="form-control border-0"
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) =>
-                setConfirmPassword(e.target.value)
-              }
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="reg-cpw">Confirm Password</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-shield-lock" />
+              <input
+                id="reg-cpw"
+                type="password"
+                className="md-form-control"
+                placeholder="Repeat your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleRegister(); }}
+              />
+            </div>
           </div>
 
           <button
-            className="btn login-btn w-100"
+            className="md-btn md-btn-primary md-btn-lg"
+            style={{ width: "100%", marginTop: "4px", marginBottom: "20px" }}
             onClick={handleRegister}
             disabled={loading}
           >
             {loading ? (
-              <span>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <>
+                <span className="md-spinner" style={{ width: 18, height: 18 }} />
                 Creating Account...
-              </span>
+              </>
             ) : (
-              "Register"
+              <>
+                <i className="bi bi-person-plus" />
+                Create Account
+              </>
             )}
           </button>
 
-          <p className="text-center mt-4">
+          <p style={{ textAlign: "center", fontSize: "0.88rem", color: "var(--md-text-muted)" }}>
             Already have an account?{" "}
-            <Link
-              to="/login"
-              className="signup-link text-decoration-none"
-            >
-              Login
-            </Link>
+            <Link to="/login" className="md-auth-link">Sign in</Link>
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import "./components/Attachments.css";
 import { ToastProvider } from "./context/ToastContext";
@@ -6,12 +6,12 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ChangePassword from "./pages/ChangePassword";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import Welcome from "./pages/Welcome";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
-
-  return token ? children : <Navigate to="/" replace />;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
 function App() {
@@ -19,21 +19,31 @@ function App() {
     <ToastProvider>
       <BrowserRouter>
         <Routes>
-         <Route path="/" element={<Welcome />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/change-password" element={<ChangePassword />} />
-       <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-             }
-        />
-      </Routes>
-    </BrowserRouter>
-  </ToastProvider>
+          <Route path="/" element={<Welcome />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/change-password" element={<ChangePassword />} />
+
+          {/* Dashboard and sub-views — all render Dashboard, which reads the path */}
+          <Route
+            path="/dashboard"
+            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+          />
+          <Route
+            path="/mynotes"
+            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+          />
+          <Route
+            path="/calendar"
+            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+          />
+          <Route
+            path="/profile"
+            element={<ProtectedRoute><Profile /></ProtectedRoute>}
+          />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

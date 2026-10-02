@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import diary from "./image.png";
 import API_BASE_URL from "../api/config";
 import { toast } from "../context/ToastContext";
 
 function Login() {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -17,26 +16,14 @@ function Login() {
       toast.warning("Please enter your email and password.", "Missing Credentials");
       return;
     }
-
     try {
       setLoading(true);
-      const res = await axios.post(
-        `${API_BASE_URL}/api/login`,
-        {
-          email,
-          password,
-        }
-      );
-
+      const res = await axios.post(`${API_BASE_URL}/api/login`, { email, password });
       toast.success(res.data.message || "Welcome back!", "Login Successful");
-
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       localStorage.setItem("loginTime", Date.now());
-
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 700);
+      setTimeout(() => { navigate("/dashboard"); }, 700);
     } catch (err) {
       toast.error(
         err.response?.data?.message || err.message || "Unable to log in. Please verify your credentials.",
@@ -48,137 +35,117 @@ function Login() {
   };
 
   return (
-    <div className="login-bg d-flex justify-content-center align-items-center">
-      <div className="login-card">
-
-        <div className="top-section">
-          <img
-            src={diary}
-            alt="Diary"
-            className="diary-img"
-          />
+    <div className="md-auth-page">
+      <div className="md-auth-container">
+        {/* Left Panel */}
+        <div className="md-auth-left">
+          <div className="md-auth-brand-icon">📓</div>
+          <div className="md-auth-brand-name">MindDesk</div>
+          <div className="md-auth-brand-sub">Digital Notes System</div>
+          <p className="md-auth-tagline">
+            Capture every idea, organize your knowledge, and never miss a deadline.
+          </p>
+          <div className="md-auth-features">
+            <div className="md-auth-feature">
+              <i className="bi bi-journal-text" />
+              Smart Notes with Categories
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-check2-square" />
+              Daily To-Do List
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-calendar3" />
+              Deadline Calendar
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-paperclip" />
+              File Attachments
+            </div>
+          </div>
         </div>
 
-        <div className="form-section">
-          <div className="text-center mb-2">
-            <span className="badge rounded-pill" style={{ background: '#f5ede4', color: '#5c4033', padding: '6px 14px', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
-              <i className="bi bi-journal-text me-1 text-warning"></i> MindDesk
-            </span>
+        {/* Right Panel */}
+        <div className="md-auth-right">
+          <div className="md-auth-right-header">
+            <div className="md-auth-title">Welcome back 👋</div>
+            <div className="md-auth-subtitle">Sign in to continue to your workspace</div>
           </div>
 
-          <h2 className="welcome">Welcome Back!</h2>
-
-          <p className="subtitle">
-            Login to continue your notes
-          </p>
-
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-envelope"></i>
-            </span>
-
-            <input
-              type="email"
-              className="form-control border-0"
-              placeholder="Email"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-            />
-          </div>
-
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-lock"></i>
-            </span>
-
-            <input
-              type="password"
-              className="form-control border-0"
-              placeholder="Password"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-            />
-
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-eye"></i>
-            </span>
-          </div>
-
-          <div className="d-flex justify-content-between align-items-center mb-4 small">
-
-            <div className="form-check">
+          {/* Email */}
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="login-email">Email address</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-envelope" />
               <input
-                className="form-check-input"
-                type="checkbox"
-                id="remember"
+                id="login-email"
+                type="email"
+                className="md-form-control"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
               />
-
-              <label
-                className="form-check-label"
-                htmlFor="remember"
-              >
-                Remember Me
-              </label>
             </div>
-
-            <Link
-              to="/change-password"
-              className="forgot-link text-decoration-none"
-            >
-              Forgot Password?
-            </Link>
-
           </div>
 
+          {/* Password */}
+          <div className="md-form-group">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+              <label className="md-form-label" htmlFor="login-password" style={{ marginBottom: 0 }}>Password</label>
+              <Link to="/change-password" className="md-auth-link" style={{ fontSize: "0.8rem" }}>
+                Forgot password?
+              </Link>
+            </div>
+            <div className="md-form-control-icon" style={{ position: "relative" }}>
+              <i className="bi bi-lock" />
+              <input
+                id="login-password"
+                type={showPw ? "text" : "password"}
+                className="md-form-control"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
+                style={{ paddingRight: "42px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", color: "var(--md-text-muted)", padding: "0"
+                }}
+              >
+                <i className={`bi ${showPw ? "bi-eye-slash" : "bi-eye"}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Submit */}
           <button
-            className="btn login-btn w-100"
+            className="md-btn md-btn-primary md-btn-lg"
+            style={{ width: "100%", marginTop: "8px", marginBottom: "20px" }}
             onClick={handleLogin}
             disabled={loading}
           >
             {loading ? (
-              <span>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Logging in...
-              </span>
+              <>
+                <span className="md-spinner" style={{ width: 18, height: 18 }} />
+                Signing in...
+              </>
             ) : (
-              "Login"
+              <>
+                <i className="bi bi-box-arrow-in-right" />
+                Sign In
+              </>
             )}
           </button>
 
-          <p className="text-center mt-4">
+          <p style={{ textAlign: "center", fontSize: "0.88rem", color: "var(--md-text-muted)" }}>
             Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="signup text-decoration-none"
-            >
-              Sign Up
-            </Link>
+            <Link to="/register" className="md-auth-link">Create one free</Link>
           </p>
-
-          <div className="divider">
-            <span>or continue with</span>
-          </div>
-
-          <div className="social-icons">
-
-            <button className="social-btn">
-              <i className="bi bi-google"></i>
-            </button>
-
-            <button className="social-btn">
-              <i className="bi bi-apple"></i>
-            </button>
-
-            <button className="social-btn">
-              <i className="bi bi-facebook"></i>
-            </button>
-
-          </div>
-
         </div>
       </div>
     </div>

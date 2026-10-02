@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import diary from "./pswd.png";
 import API_BASE_URL from "../api/config";
 import { toast } from "../context/ToastContext";
 
 function ChangePassword() {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -15,41 +13,22 @@ function ChangePassword() {
   const [loading, setLoading] = useState(false);
 
   const handleChangePassword = async () => {
-    if (
-      !email ||
-      !currentPassword ||
-      !newPassword ||
-      !confirmPassword
-    ) {
+    if (!email || !currentPassword || !newPassword || !confirmPassword) {
       toast.warning("Please fill in all required fields.", "Incomplete Fields");
       return;
     }
-
     if (newPassword !== confirmPassword) {
       toast.error("New passwords do not match. Please verify and try again.", "Password Mismatch");
       return;
     }
-
     try {
       setLoading(true);
-      const res = await axios.put(
-        `${API_BASE_URL}/api/change-password`,
-        {
-          email,
-          currentPassword,
-          newPassword,
-        }
-      );
-
+      const res = await axios.put(`${API_BASE_URL}/api/change-password`, { email, currentPassword, newPassword });
       toast.success(res.data.message || "Password updated successfully!", "Success");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
+      setTimeout(() => { navigate("/login"); }, 1000);
     } catch (err) {
       toast.error(
-        err.response?.data?.message ||
-          "Password update failed. Please check your current password.",
+        err.response?.data?.message || "Password update failed. Please check your current password.",
         "Update Failed"
       );
     } finally {
@@ -58,120 +37,122 @@ function ChangePassword() {
   };
 
   return (
-    <div className="login-bg d-flex justify-content-center align-items-center">
-      <div className="login-card">
-        <div
-          className="top-section"
-          style={{
-            background:
-              "linear-gradient(135deg, #f7f2eb 0%, #efe3d5 50%, #f5ece3 100%)",
-          }}
-        >
-          <img
-            src={diary}
-            alt="Diary"
-            className="diary-img"
-          />
+    <div className="md-auth-page">
+      <div className="md-auth-container" style={{ maxWidth: 700 }}>
+        {/* Left Panel */}
+        <div className="md-auth-left" style={{ flex: "0 0 280px" }}>
+          <div className="md-auth-brand-icon">🔐</div>
+          <div className="md-auth-brand-name">Security</div>
+          <div className="md-auth-brand-sub">Password Management</div>
+          <p className="md-auth-tagline">
+            Keep your account secure by using a strong, unique password that you don't use elsewhere.
+          </p>
+          <div className="md-auth-features" style={{ marginTop: "20px" }}>
+            <div className="md-auth-feature">
+              <i className="bi bi-shield-check" />
+              Use 8+ characters
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-key" />
+              Mix letters, numbers & symbols
+            </div>
+            <div className="md-auth-feature">
+              <i className="bi bi-incognito" />
+              Never share your password
+            </div>
+          </div>
         </div>
 
-        <div className="form-section">
-          <div className="text-center mb-2">
-            <span className="badge rounded-pill" style={{ background: '#f5ede4', color: '#5c4033', padding: '6px 14px', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
-              <i className="bi bi-journal-text me-1 text-warning"></i> MindDesk
-            </span>
+        {/* Right Panel */}
+        <div className="md-auth-right">
+          <div className="md-auth-right-header">
+            <div className="md-auth-title">Change Password 🔒</div>
+            <div className="md-auth-subtitle">Update your account password securely</div>
           </div>
 
-          <h2 className="welcome">Change Password</h2>
-
-          <p className="subtitle">
-            Update your account password securely
-          </p>
-
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-envelope"></i>
-            </span>
-
-            <input
-              type="email"
-              className="form-control border-0"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="cp-email">Email Address</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-envelope" />
+              <input
+                id="cp-email"
+                type="email"
+                className="md-form-control"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-lock"></i>
-            </span>
-
-            <input
-              type="password"
-              className="form-control border-0"
-              placeholder="Current Password"
-              value={currentPassword}
-              onChange={(e) =>
-                setCurrentPassword(e.target.value)
-              }
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="cp-current">Current Password</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-lock" />
+              <input
+                id="cp-current"
+                type="password"
+                className="md-form-control"
+                placeholder="Your current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="input-group custom-input mb-3">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-key"></i>
-            </span>
-
-            <input
-              type="password"
-              className="form-control border-0"
-              placeholder="New Password"
-              value={newPassword}
-              onChange={(e) =>
-                setNewPassword(e.target.value)
-              }
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="cp-new">New Password</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-key" />
+              <input
+                id="cp-new"
+                type="password"
+                className="md-form-control"
+                placeholder="Create a new strong password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="input-group custom-input mb-4">
-            <span className="input-group-text bg-transparent border-0">
-              <i className="bi bi-shield-lock"></i>
-            </span>
-
-            <input
-              type="password"
-              className="form-control border-0"
-              placeholder="Confirm New Password"
-              value={confirmPassword}
-              onChange={(e) =>
-                setConfirmPassword(e.target.value)
-              }
-            />
+          <div className="md-form-group">
+            <label className="md-form-label" htmlFor="cp-confirm">Confirm New Password</label>
+            <div className="md-form-control-icon">
+              <i className="bi bi-shield-lock" />
+              <input
+                id="cp-confirm"
+                type="password"
+                className="md-form-control"
+                placeholder="Repeat the new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
+              />
+            </div>
           </div>
 
           <button
-            className="btn login-btn w-100"
+            className="md-btn md-btn-primary md-btn-lg"
+            style={{ width: "100%", marginTop: "4px", marginBottom: "20px" }}
             onClick={handleChangePassword}
             disabled={loading}
           >
             {loading ? (
-              <span>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Updating Password...
-              </span>
+              <>
+                <span className="md-spinner" style={{ width: 18, height: 18 }} />
+                Updating...
+              </>
             ) : (
-              "Update Password"
+              <>
+                <i className="bi bi-shield-check" />
+                Update Password
+              </>
             )}
           </button>
 
-          <p className="text-center mt-4">
+          <p style={{ textAlign: "center", fontSize: "0.88rem", color: "var(--md-text-muted)" }}>
             Remember your password?{" "}
-            <Link
-              to="/login"
-              className="signup-link text-decoration-none"
-            >
-              Back to Login
-            </Link>
+            <Link to="/login" className="md-auth-link">Back to Login</Link>
           </p>
         </div>
       </div>
