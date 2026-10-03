@@ -177,8 +177,8 @@ input, select, textarea { font-family: inherit; }
 .md-card { background: var(--md-card); border: 1px solid var(--md-card-border); border-radius: var(--md-radius); padding: 24px; box-shadow: var(--md-shadow); transition: box-shadow var(--md-transition), transform var(--md-transition); }
 .md-card:hover { box-shadow: var(--md-shadow-lg); }
 .md-card-sm { padding: 16px; }
-.md-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-.md-stat-card { background: var(--md-card); border: 1px solid var(--md-card-border); border-radius: var(--md-radius); padding: 22px 20px; box-shadow: var(--md-shadow); transition: box-shadow var(--md-transition), transform var(--md-transition); position: relative; overflow: hidden; }
+.md-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; width: 100%; }
+.md-stat-card { background: var(--md-card); border: 1px solid var(--md-card-border); border-radius: var(--md-radius); padding: 22px 20px; box-shadow: var(--md-shadow); transition: box-shadow var(--md-transition), transform var(--md-transition); position: relative; overflow: hidden; min-width: 0; }
 .md-stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--md-primary), var(--md-accent)); }
 .md-stat-card:hover { box-shadow: var(--md-shadow-lg); transform: translateY(-2px); }
 .md-stat-icon { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #f5e8d8, #eedfc6); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 14px; }
@@ -981,14 +981,37 @@ input:-webkit-autofill:active {
 
 @media (max-width: 576px) {
   .md-stat-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px;
   }
   .md-stat-card {
-    padding: 16px 12px;
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+  .md-stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .md-stat-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.4px;
+    line-height: 1.25;
+    min-height: 28px;
+    display: flex;
+    align-items: flex-end;
   }
   .md-stat-value {
     font-size: 1.6rem;
+  }
+  .md-stat-change {
+    font-size: 0.68rem;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .md-welcome-cta {
     flex-direction: column;
@@ -1000,7 +1023,7 @@ input:-webkit-autofill:active {
     text-align: center;
   }
   .md-welcome-features {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px;
   }
   .md-welcome-footer {
@@ -1028,6 +1051,39 @@ input:-webkit-autofill:active {
 }
 
 @media (max-width: 480px) {
+  .md-stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+  .md-stat-card {
+    padding: 12px 10px;
+    border-radius: 12px;
+  }
+  .md-stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  .md-stat-label {
+    font-size: 0.66rem;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+    min-height: 26px;
+    display: flex;
+    align-items: flex-end;
+  }
+  .md-stat-value {
+    font-size: 1.5rem;
+  }
+  .md-stat-change {
+    font-size: 0.65rem;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .md-page-content {
     padding: 12px;
   }
@@ -1067,10 +1123,41 @@ input:-webkit-autofill:active {
 
 @media (max-width: 360px) {
   .md-stat-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+  .md-stat-card {
+    padding: 10px 8px;
+    border-radius: 10px;
+  }
+  .md-stat-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    margin-bottom: 4px;
+  }
+  .md-stat-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2px;
+    line-height: 1.15;
+    min-height: 24px;
+    display: flex;
+    align-items: flex-end;
+  }
+  .md-stat-value {
+    font-size: 1.35rem;
+  }
+  .md-stat-change {
+    font-size: 0.6rem;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .md-welcome-features {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
   }
   .md-brand-name {
     font-size: 1.15rem;
