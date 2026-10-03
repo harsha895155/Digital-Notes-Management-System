@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import ChangePassword from "./pages/ChangePassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import Categories from "./pages/Categories";
 import Welcome from "./pages/Welcome";
 
 function ProtectedRoute({ children }) {
@@ -24,7 +25,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/change-password" element={<ChangePassword />} />
 
-          {/* Dashboard and sub-views — all render Dashboard, which reads the path */}
+          {/* Core App Views */}
           <Route
             path="/dashboard"
             element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
@@ -34,7 +35,15 @@ function App() {
             element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
           />
           <Route
+            path="/categories"
+            element={<ProtectedRoute><Categories /></ProtectedRoute>}
+          />
+          <Route
             path="/calendar"
+            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+          />
+          <Route
+            path="/tasks"
             element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
           />
           <Route

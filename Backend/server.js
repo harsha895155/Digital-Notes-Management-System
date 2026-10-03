@@ -237,6 +237,57 @@ app.get("/api/categories/:email", async (req, res) => {
   }
 });
 
+// ==================== UPDATE CATEGORY ====================
+app.put("/api/categories/:id", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Category name is required" });
+    }
+
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    const oldName = category.name;
+    const newName = name.trim();
+
+    // Check if new name already exists for this user
+    if (oldName.toLowerCase() !== newName.toLowerCase()) {
+      const exists = await Category.findOne({
+        userEmail: category.userEmail,
+        name: { $regex: new RegExp(`^${newName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
+        _id: { $ne: category._id },
+      });
+      if (exists) {
+        return res.status(400).json({ message: "A category with this name already exists" });
+      }
+    }
+
+    category.name = newName;
+    await category.save();
+
+    // Cascade update to all notes belonging to this category
+    if (oldName !== newName) {
+      await Note.updateMany(
+        { category: oldName, userEmail: category.userEmail },
+        { $set: { category: newName } }
+      );
+    }
+
+    res.status(200).json({
+      message: "Category updated successfully",
+      category,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to update category",
+      error: error.message,
+    });
+  }
+});
+
 // ==================== CREATE FOLDER IN CATEGORY ====================
 app.post("/api/categories/:id/folders", async (req, res) => {
   try {

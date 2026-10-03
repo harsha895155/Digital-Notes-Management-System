@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const NAV_ITEMS = [
-  { path: "/dashboard", icon: "bi-grid-1x2", label: "Dashboard" },
-  { path: "/mynotes",   icon: "bi-journal-text", label: "Notes" },
-  { path: "/calendar",  icon: "bi-calendar3", label: "Calendar" },
+  { path: "/dashboard",   icon: "bi-grid-1x2",     label: "Dashboard" },
+  { path: "/mynotes",     icon: "bi-journal-text", label: "Notes" },
+  { path: "/categories",  icon: "bi-folder",       label: "Categories" },
+  { path: "/calendar",    icon: "bi-calendar3",    label: "Calendar" },
+  { path: "/tasks",       icon: "bi-check2-square",label: "Today's Tasks" },
+  { path: "/profile",     icon: "bi-person",       label: "Profile" },
 ];
 
 const BOTTOM_ITEMS = [

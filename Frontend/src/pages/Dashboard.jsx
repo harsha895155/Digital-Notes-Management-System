@@ -83,6 +83,19 @@ function Dashboard() {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    if (location.pathname === "/tasks") {
+      setTimeout(() => {
+        const el = document.getElementById("todo-section");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const input = el.querySelector("input");
+          if (input) input.focus();
+        }
+      }, 150);
+    }
+  }, [location.pathname]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -251,7 +264,7 @@ function Dashboard() {
             </div>
 
             {/* To-Do Today */}
-            <div className="md-card">
+            <div className="md-card" id="todo-section">
               <div className="md-section-header">
                 <div className="md-section-title">
                   <i className="bi bi-check2-square" />

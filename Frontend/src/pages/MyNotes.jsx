@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL, { getAuthHeaders } from "../api/config";
 import { toast, showConfirm } from "../context/ToastContext";
@@ -8,6 +9,9 @@ import AttachmentPreview from "../components/AttachmentPreview";
 import { formatFileSize, getFileInfo, downloadAttachment } from "../utils/fileUtils";
 
 function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [notes, setNotes] = useState([]);
@@ -18,7 +22,9 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
   const [category, setCategory] = useState("");
   const [newCategory, setNewCategory] = useState("");
 
-  const [selectedCategory, setSelectedCategory] = useState("All Notes");
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    return searchParams.get("category") || location.state?.category || "All Notes";
+  });
   const [selectedFolder, setSelectedFolder] = useState("");
   const [deadline, setDeadline] = useState("");
 
@@ -117,6 +123,16 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
     if (fetchTotalNotes) fetchTotalNotes();
     if (fetchUpcomingNotes) fetchUpcomingNotes();
   }, []);
+
+  useEffect(() => {
+    const catQuery = searchParams.get("category");
+    const catState = location.state?.category;
+    const target = catQuery || catState;
+    if (target) {
+      setSelectedCategory(target);
+      setSelectedFolder("");
+    }
+  }, [location.search, location.state, searchParams]);
 
   const handleCreateCategory = async () => {
     if (!newCategory.trim()) {

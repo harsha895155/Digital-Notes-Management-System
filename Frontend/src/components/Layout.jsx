@@ -5,7 +5,9 @@ import Sidebar from "./Sidebar";
 const PAGE_TITLES = {
   "/dashboard":       { title: "Dashboard", subtitle: "Welcome back — here's your overview" },
   "/mynotes":         { title: "My Notes", subtitle: "Manage and organize your notes" },
+  "/categories":      { title: "Categories", subtitle: "Organize your notes into meaningful groups." },
   "/calendar":        { title: "Calendar", subtitle: "View deadlines on your calendar" },
+  "/tasks":           { title: "Today's Tasks", subtitle: "Manage and complete your daily to-dos" },
   "/profile":         { title: "Profile", subtitle: "Manage your personal information and account settings" },
   "/change-password": { title: "Change Password", subtitle: "Keep your account secure" },
 };
