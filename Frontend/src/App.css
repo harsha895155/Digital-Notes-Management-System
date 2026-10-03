@@ -316,8 +316,8 @@ input:-webkit-autofill:active {
 .md-note-title { font-size: 0.95rem; font-weight: 700; color: var(--md-text-dark); line-height: 1.35; }
 .md-note-cat { font-size: 0.7rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: linear-gradient(135deg, #f5e4cc, #eedfc6); color: var(--md-primary); white-space: nowrap; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.5px; }
 .md-note-folder-badge { font-size: 0.68rem; color: var(--md-text-muted); display: flex; align-items: center; gap: 4px; }
-.md-note-content { font-size: 0.83rem; color: var(--md-text-muted); line-height: 1.55; overflow: hidden; max-height: 3.7em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-.md-note-content.expanded { -webkit-line-clamp: unset; max-height: none; }
+.md-note-content { font-size: 0.83rem; color: var(--md-text-muted); line-height: 1.55; overflow: hidden; max-height: 3.7em; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; }
+.md-note-content.expanded { -webkit-line-clamp: unset; line-clamp: unset; max-height: none; }
 .md-note-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--md-card-border); gap: 10px; flex-wrap: wrap; }
 .md-note-meta { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; color: var(--md-text-muted); }
 .md-note-date { display: flex; align-items: center; gap: 4px; }
@@ -854,8 +854,8 @@ input:-webkit-autofill:active {
 }
 .note-card:hover { box-shadow: var(--md-shadow-lg); transform: translateY(-2px); }
 .note-title { font-size: 0.95rem; font-weight: 700; color: var(--md-text-dark); margin-bottom: 6px; word-break: break-word; overflow-wrap: anywhere; }
-.note-content { font-size: 0.83rem; color: var(--md-text-muted); line-height: 1.55; overflow: hidden; max-height: 3.7em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-word; overflow-wrap: anywhere; }
-.note-content.expanded { -webkit-line-clamp: unset; max-height: none; }
+.note-content { font-size: 0.83rem; color: var(--md-text-muted); line-height: 1.55; overflow: hidden; max-height: 3.7em; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; word-break: break-word; overflow-wrap: anywhere; }
+.note-content.expanded { -webkit-line-clamp: unset; line-clamp: unset; max-height: none; }
 .note-deadline { font-size: 0.78rem; color: #c0392b; display: flex; align-items: center; gap: 4px; }
 .note-date { font-size: 0.75rem; color: var(--md-text-muted); }
 .category-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 11px; border-radius: 9px; cursor: pointer; transition: all var(--md-transition); margin-bottom: 2px; font-size: 0.86rem; }
