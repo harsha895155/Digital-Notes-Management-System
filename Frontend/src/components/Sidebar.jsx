@@ -6,7 +6,6 @@ const NAV_ITEMS = [
   { path: "/mynotes",     icon: "bi-journal-text", label: "Notes" },
   { path: "/categories",  icon: "bi-folder",       label: "Categories" },
   { path: "/calendar",    icon: "bi-calendar3",    label: "Calendar" },
-  { path: "/profile",     icon: "bi-person",       label: "Profile" },
 ];
 
 const BOTTOM_ITEMS = [
