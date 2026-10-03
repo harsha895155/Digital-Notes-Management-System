@@ -37,12 +37,22 @@ export default function Sidebar({ user, onLogout, isOpen, onClose }) {
       <aside className={`md-sidebar${isOpen ? " open" : ""}`}>
         {/* Brand */}
         <div className="md-brand">
-          <div className="md-brand-logo" style={{ cursor: "pointer" }} onClick={() => handleNav("/dashboard")}>
-            <div className="md-brand-icon">📓</div>
-            <div>
-              <div className="md-brand-name">MindDesk</div>
-              <div className="md-brand-sub">Notes System</div>
+          <div className="md-brand-header-row">
+            <div className="md-brand-logo" style={{ cursor: "pointer", margin: 0 }} onClick={() => handleNav("/dashboard")}>
+              <div className="md-brand-icon">📓</div>
+              <div>
+                <div className="md-brand-name">MindDesk</div>
+                <div className="md-brand-sub">Notes System</div>
+              </div>
             </div>
+            <button
+              type="button"
+              className="md-sidebar-close-btn"
+              onClick={onClose}
+              aria-label="Close sidebar menu"
+            >
+              <i className="bi bi-x-lg" />
+            </button>
           </div>
 
           {/* User chip - clickable to profile */}

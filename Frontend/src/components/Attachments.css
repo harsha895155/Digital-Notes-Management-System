@@ -500,3 +500,38 @@
   background: #faf7f2;
   border-top: 1px solid #ebd8c8;
 }
+
+@media (max-width: 576px) {
+  .attachment-modal-overlay {
+    padding: 10px;
+  }
+  .attachment-modal-container {
+    width: calc(100vw - 20px) !important;
+    border-radius: 14px;
+    max-height: 85vh;
+  }
+  .attachment-modal-header {
+    padding: 12px 16px;
+  }
+  .attachment-modal-body {
+    padding: 12px;
+    min-height: 200px;
+  }
+  .attachment-modal-footer {
+    padding: 10px 16px;
+  }
+  .attachment-upload-zone {
+    padding: 18px 12px;
+  }
+  .upload-icon-circle {
+    width: 44px;
+    height: 44px;
+    font-size: 1.25rem;
+  }
+  .upload-title {
+    font-size: 0.9rem;
+  }
+  .attachment-name {
+    max-width: min(160px, 42vw);
+  }
+}

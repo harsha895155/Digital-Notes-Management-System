@@ -1,7 +1,28 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import bg from "./Welcome.png";
 
 function Welcome() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile drawer on ESC or window resize to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
     <div
       className="md-welcome-page"
@@ -12,7 +33,7 @@ function Welcome() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* Top Navigation Bar - covers the top space and establishes strong branding */}
+      {/* Top Navigation Bar */}
       <header className="md-welcome-nav">
         <div className="md-welcome-brand">
           <div className="md-brand-icon" style={{ width: 38, height: 38, fontSize: "1.2rem" }}>📓</div>
@@ -22,6 +43,7 @@ function Welcome() {
           </div>
         </div>
 
+        {/* Desktop Nav Actions */}
         <div className="md-welcome-nav-actions">
           <a
             href="mailto:minddesk43@gmail.com"
@@ -47,7 +69,79 @@ function Welcome() {
             Sign Up Free
           </Link>
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          className="md-welcome-hamburger"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
+        >
+          <i className={`bi ${mobileMenuOpen ? "bi-x-lg" : "bi-list"}`} />
+        </button>
       </header>
+
+      {/* Mobile Nav Drawer & Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="md-welcome-drawer-overlay"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <div
+            className="md-welcome-drawer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="md-welcome-drawer-header">
+              <div className="md-welcome-brand">
+                <div className="md-brand-icon" style={{ width: 34, height: 34, fontSize: "1.1rem" }}>📓</div>
+                <div className="md-brand-name" style={{ color: "var(--md-text-dark)", fontSize: "1.15rem" }}>MindDesk</div>
+              </div>
+              <button
+                className="md-welcome-drawer-close"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close navigation"
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <div className="md-welcome-drawer-links">
+              <Link
+                to="/login"
+                className="md-btn md-btn-ghost md-btn-lg w-100"
+                style={{ fontWeight: 700, color: "var(--md-text-dark)" }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <i className="bi bi-box-arrow-in-right me-2" />
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="md-btn md-btn-primary md-btn-lg w-100"
+                style={{ boxShadow: "0 4px 14px rgba(139, 79, 39, 0.25)" }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <i className="bi bi-person-plus-fill me-2" />
+                Sign Up Free
+              </Link>
+            </div>
+
+            <div className="md-welcome-drawer-footer">
+              <div style={{ fontSize: "0.76rem", color: "var(--md-text-muted)", marginBottom: "8px", fontWeight: 600 }}>
+                NEED HELP OR HAVE QUESTIONS?
+              </div>
+              <a
+                href="mailto:minddesk43@gmail.com"
+                className="md-welcome-email-pill w-100 text-center justify-content-center"
+                title="Email MindDesk Support"
+              >
+                <i className="bi bi-envelope-fill me-1" />
+                <span>minddesk43@gmail.com</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Hero Content */}
       <div className="md-welcome-hero">
@@ -55,7 +149,7 @@ function Welcome() {
           {/* Badge */}
           <div className="md-welcome-hero-badge">
             <i className="bi bi-stars" />
-            The Smart Notes Workspace
+            <span>The Smart Notes Workspace</span>
           </div>
 
           {/* Headline */}
@@ -69,21 +163,21 @@ function Welcome() {
             track deadlines, and boost daily productivity — all in one beautiful workspace.
           </p>
 
-          {/* CTA Buttons - High Contrast & Clearly Visible */}
+          {/* CTA Buttons */}
           <div className="md-welcome-cta">
             <Link
               to="/login"
               className="md-welcome-btn-primary"
             >
               <i className="bi bi-arrow-right-circle-fill" />
-              Get Started
+              <span>Get Started</span>
             </Link>
             <Link
               to="/register"
               className="md-welcome-btn-secondary"
             >
               <i className="bi bi-person-plus-fill" />
-              Create Account
+              <span>Create Account</span>
             </Link>
           </div>
 
@@ -114,17 +208,7 @@ function Welcome() {
       </div>
 
       {/* Footer bar */}
-      <footer style={{
-        padding: "14px 8%",
-        borderTop: "1px solid rgba(0,0,0,0.08)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: "12px",
-        background: "rgba(255,255,255,0.5)",
-        backdropFilter: "blur(6px)",
-      }}>
+      <footer className="md-welcome-footer">
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ width: 28, height: 28, background: "var(--md-primary)", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", color: "white" }}>
             📓
@@ -139,7 +223,7 @@ function Welcome() {
           title="Contact MindDesk"
         >
           <i className="bi bi-envelope-fill" />
-          minddesk43@gmail.com
+          <span>minddesk43@gmail.com</span>
         </a>
       </footer>
     </div>

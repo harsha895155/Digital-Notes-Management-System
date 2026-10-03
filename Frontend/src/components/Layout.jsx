@@ -45,15 +45,7 @@ export default function Layout({ user, onLogout, children }) {
             </div>
           </div>
           <div className="md-topbar-right">
-            <span style={{
-              fontSize: "0.78rem",
-              color: "var(--md-text-muted)",
-              background: "var(--md-bg)",
-              padding: "5px 12px",
-              borderRadius: "20px",
-              border: "1px solid var(--md-card-border)",
-              fontWeight: 600,
-            }}>
+            <span className="md-topbar-date">
               <i className="bi bi-clock me-1" style={{ fontSize: "0.72rem" }} />
               {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </span>

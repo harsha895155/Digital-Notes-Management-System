@@ -476,10 +476,11 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
           </div>
 
           {activeCreateTab === "category" ? (
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 flex-wrap">
               <input
                 type="text"
                 className="form-control"
+                style={{ flex: "1 1 200px" }}
                 placeholder="Enter Category Name (e.g. Work, College, Personal)..."
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
@@ -490,7 +491,7 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
                   }
                 }}
               />
-              <button className="btn btn-success" onClick={handleCreateCategory}>
+              <button className="btn btn-success" onClick={handleCreateCategory} style={{ whiteSpace: "nowrap" }}>
                 Create Category
               </button>
             </div>
