@@ -2,26 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL, { getAuthHeaders } from "../api/config";
-import { toast } from "../context/ToastContext";
+import { toast, showConfirm } from "../context/ToastContext";
 import Layout from "../components/Layout";
-
-// Helper to pick an intuitive emoji icon based on category name or selected icon
-export const getCategoryIcon = (name = "") => {
-  const lower = name.toLowerCase().trim();
-  if (lower.includes("work") || lower.includes("office") || lower.includes("job")) return "💼";
-  if (lower.includes("study") || lower.includes("college") || lower.includes("school") || lower.includes("exam") || lower.includes("course")) return "🎓";
-  if (lower.includes("personal") || lower.includes("life") || lower.includes("myself") || lower.includes("home")) return "👤";
-  if (lower.includes("idea") || lower.includes("think") || lower.includes("creative") || lower.includes("brainstorm")) return "💡";
-  if (lower.includes("important") || lower.includes("star") || lower.includes("urgent") || lower.includes("priority")) return "⭐";
-  if (lower.includes("code") || lower.includes("dev") || lower.includes("tech") || lower.includes("program") || lower.includes("software")) return "💻";
-  if (lower.includes("project") || lower.includes("launch") || lower.includes("sprint")) return "🚀";
-  if (lower.includes("money") || lower.includes("finance") || lower.includes("budget") || lower.includes("bank")) return "💰";
-  if (lower.includes("book") || lower.includes("read") || lower.includes("novel")) return "📚";
-  if (lower.includes("health") || lower.includes("fit") || lower.includes("gym") || lower.includes("workout")) return "🏃";
-  if (lower.includes("travel") || lower.includes("trip") || lower.includes("vacation") || lower.includes("flight")) return "✈️";
-  if (lower.includes("music") || lower.includes("song") || lower.includes("album")) return "🎵";
-  return "📁";
-};
+import AttachmentPreview from "../components/AttachmentPreview";
+import { formatFileSize, getFileInfo, downloadAttachment } from "../utils/fileUtils";
 
 export default function Categories() {
   const navigate = useNavigate();
@@ -41,10 +25,21 @@ export default function Categories() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Search State
-  const [searchQuery, setSearchQuery] = useState("");
+  // Selection & Filter States (matching Note Page layout in screenshot)
+  const [selectedCategory, setSelectedCategory] = useState("All Notes");
+  const [selectedFolder, setSelectedFolder] = useState("");
+  const [search, setSearch] = useState("");
 
-  // Modal States
+  // Subfolder creation & accordion states
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [activeFolderInputCatId, setActiveFolderInputCatId] = useState(null);
+  const [newFolderName, setNewFolderName] = useState("");
+
+  // Quick Inline Add Category state
+  const [quickCatName, setQuickCatName] = useState("");
+  const [isQuickAddingCat, setIsQuickAddingCat] = useState(false);
+
+  // Modals States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -56,15 +51,9 @@ export default function Categories() {
   const [deletingCategory, setDeletingCategory] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Open dropdown ID for card menus
-  const [activeMenuId, setActiveMenuId] = useState(null);
-
-  // Close card menus on outside click
-  useEffect(() => {
-    const handleOutsideClick = () => setActiveMenuId(null);
-    window.addEventListener("click", handleOutsideClick);
-    return () => window.removeEventListener("click", handleOutsideClick);
-  }, []);
+  // Attachments preview & card expansion
+  const [expandedCards, setExpandedCards] = useState({});
+  const [previewAttachment, setPreviewAttachment] = useState(null);
 
   // Fetch Categories & Notes
   const loadData = async () => {
@@ -78,7 +67,6 @@ export default function Categories() {
       setLoading(true);
       setError(null);
 
-      // Fetch categories and user's notes simultaneously
       const [catRes, notesRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/categories/${user.email}`, {
           headers: getAuthHeaders(),
@@ -91,7 +79,7 @@ export default function Categories() {
       setCategories(catRes.data || []);
       setNotes(notesRes.data || []);
     } catch (err) {
-      console.error("Failed to load categories:", err);
+      console.error("Failed to load categories & notes:", err);
       setError("Unable to load categories. Please check your connection and try again.");
     } finally {
       setLoading(false);
@@ -113,12 +101,29 @@ export default function Categories() {
     return counts;
   }, [notes]);
 
-  // Filtered categories based on search query
-  const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return categories;
-    const q = searchQuery.toLowerCase().trim();
-    return categories.filter((cat) => cat.name.toLowerCase().includes(q));
-  }, [categories, searchQuery]);
+  // Filter notes according to search, selected category, and selected folder
+  const filteredNotes = useMemo(() => {
+    return notes.filter((note) => {
+      const q = search.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        note.title?.toLowerCase().includes(q) ||
+        note.description?.toLowerCase().includes(q) ||
+        (note.folder && note.folder.toLowerCase().includes(q));
+
+      const matchesCategory =
+        selectedCategory === "All Notes" ? true : note.category === selectedCategory;
+
+      let matchesFolder = true;
+      if (selectedFolder === "__general__") {
+        matchesFolder = !note.folder;
+      } else if (selectedFolder) {
+        matchesFolder = note.folder === selectedFolder;
+      }
+
+      return matchesSearch && matchesCategory && matchesFolder;
+    });
+  }, [notes, search, selectedCategory, selectedFolder]);
 
   // Handle Logout
   const handleLogout = () => {
@@ -129,15 +134,82 @@ export default function Categories() {
     navigate("/");
   };
 
-  // Navigate to Notes page filtered by category
-  const handleViewCategoryNotes = (categoryName) => {
-    navigate("/mynotes", { state: { category: categoryName } });
+  // Toggle Category Expand for Subfolders
+  const toggleCategoryExpand = (catId, e) => {
+    if (e) e.stopPropagation();
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [catId]: !prev[catId],
+    }));
   };
 
-  // Create Category
-  const handleCreateCategory = async (e) => {
-    e?.preventDefault();
-    const trimmed = newCategoryName.trim();
+  // Create Subfolder in Category
+  const handleCreateFolder = async (categoryId, folderName) => {
+    const trimmed = (folderName || "").trim();
+    if (!trimmed) {
+      toast.warning("Please enter a folder name.", "Missing Folder Name");
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/categories/${categoryId}/folders`,
+        { name: trimmed },
+        { headers: getAuthHeaders() }
+      );
+
+      const res = await axios.get(`${API_BASE_URL}/api/categories/${user.email}`, {
+        headers: getAuthHeaders(),
+      });
+      setCategories(res.data || []);
+      setActiveFolderInputCatId(null);
+      setNewFolderName("");
+      setExpandedCategories((prev) => ({ ...prev, [categoryId]: true }));
+      toast.success(`Folder "${trimmed}" created successfully.`, "Folder Created");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to create folder.", "Error");
+    }
+  };
+
+  // Delete Subfolder from Category
+  const handleDeleteFolder = async (categoryId, folderId, folderName) => {
+    const confirmed = await showConfirm({
+      title: "Delete Folder?",
+      message: `Delete folder "${folderName}"? Notes in this folder will remain in the category without a folder.`,
+      confirmText: "Delete Folder",
+      cancelText: "Cancel",
+      type: "danger",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/api/categories/${categoryId}/folders/${folderId}`,
+        { headers: getAuthHeaders() }
+      );
+
+      const [catRes, notesRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/categories/${user.email}`, {
+          headers: getAuthHeaders(),
+        }),
+        axios.get(`${API_BASE_URL}/api/notes/${user.email}`, {
+          headers: getAuthHeaders(),
+        }),
+      ]);
+
+      setCategories(catRes.data || []);
+      setNotes(notesRes.data || []);
+      if (selectedFolder === folderName) setSelectedFolder("");
+      toast.success(`Folder "${folderName}" removed successfully.`, "Folder Deleted");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete folder.", "Error");
+    }
+  };
+
+  // Create Category (from Modal or Quick Add)
+  const handleCreateCategory = async (nameToCreate) => {
+    const trimmed = (nameToCreate || newCategoryName || quickCatName).trim();
 
     if (!trimmed) {
       toast.warning("Please enter a category name.", "Required Field");
@@ -149,7 +221,6 @@ export default function Categories() {
       return;
     }
 
-    // Check duplicate
     const isDuplicate = categories.some(
       (c) => c.name.toLowerCase() === trimmed.toLowerCase()
     );
@@ -169,26 +240,17 @@ export default function Categories() {
       if (res.data) {
         setCategories((prev) => [...prev, res.data]);
         setNewCategoryName("");
+        setQuickCatName("");
+        setIsQuickAddingCat(false);
         setIsAddModalOpen(false);
+        setSelectedCategory(trimmed);
         toast.success(`Category "${trimmed}" created successfully.`, "Category Added");
       }
     } catch (err) {
-      console.error("Create category error:", err);
-      toast.error(
-        err.response?.data?.message || "Failed to create category.",
-        "Error"
-      );
+      toast.error(err.response?.data?.message || "Failed to create category.", "Error");
     } finally {
       setCreating(false);
     }
-  };
-
-  // Open Edit Modal
-  const openEditModal = (cat, e) => {
-    e?.stopPropagation();
-    setActiveMenuId(null);
-    setEditingCategory(cat);
-    setEditCategoryName(cat.name);
   };
 
   // Save Category Edit
@@ -207,7 +269,6 @@ export default function Categories() {
       return;
     }
 
-    // Check duplicate against other categories
     const isDuplicate = categories.some(
       (c) => c._id !== editingCategory._id && c.name.toLowerCase() === trimmed.toLowerCase()
     );
@@ -216,7 +277,6 @@ export default function Categories() {
       return;
     }
 
-    // If unchanged, just close
     if (trimmed === editingCategory.name) {
       setEditingCategory(null);
       return;
@@ -232,37 +292,25 @@ export default function Categories() {
         { headers: getAuthHeaders() }
       );
 
-      // Update state locally
       setCategories((prev) =>
         prev.map((c) => (c._id === editingCategory._id ? { ...c, name: trimmed } : c))
       );
 
-      // Update notes state locally
       setNotes((prevNotes) =>
         prevNotes.map((n) => (n.category === oldName ? { ...n, category: trimmed } : n))
       );
 
-      toast.success(
-        res.data?.message || `Category renamed to "${trimmed}".`,
-        "Category Updated"
-      );
+      if (selectedCategory === oldName) {
+        setSelectedCategory(trimmed);
+      }
+
+      toast.success(res.data?.message || `Category renamed to "${trimmed}".`, "Category Updated");
       setEditingCategory(null);
     } catch (err) {
-      console.error("Update category error:", err);
-      toast.error(
-        err.response?.data?.message || "Failed to update category.",
-        "Error"
-      );
+      toast.error(err.response?.data?.message || "Failed to update category.", "Error");
     } finally {
       setSavingEdit(false);
     }
-  };
-
-  // Open Delete Modal
-  const openDeleteModal = (cat, e) => {
-    e?.stopPropagation();
-    setActiveMenuId(null);
-    setDeletingCategory(cat);
   };
 
   // Confirm and Delete Category
@@ -277,9 +325,13 @@ export default function Categories() {
 
       const deletedName = deletingCategory.name;
 
-      // Update local state
       setCategories((prev) => prev.filter((c) => c._id !== deletingCategory._id));
       setNotes((prev) => prev.filter((n) => n.category !== deletedName));
+
+      if (selectedCategory === deletedName) {
+        setSelectedCategory("All Notes");
+        setSelectedFolder("");
+      }
 
       toast.success(
         `Category "${deletedName}" and related notes deleted successfully.`,
@@ -287,70 +339,48 @@ export default function Categories() {
       );
       setDeletingCategory(null);
     } catch (err) {
-      console.error("Delete category error:", err);
-      toast.error(
-        err.response?.data?.message || "Failed to delete category.",
-        "Error"
-      );
+      toast.error(err.response?.data?.message || "Failed to delete category.", "Error");
     } finally {
       setDeleting(false);
     }
   };
 
+  // Toggle card attachments expanded
+  const toggleCardExpanded = (noteId) => {
+    setExpandedCards((prev) => ({
+      ...prev,
+      [noteId]: !prev[noteId],
+    }));
+  };
+
+  // Navigate to Notes page with note/category
+  const handleOpenInNotes = (catName) => {
+    navigate("/mynotes", { state: { category: catName } });
+  };
+
   return (
     <Layout user={user} onLogout={handleLogout}>
-      <div className="md-categories-container md-fadein">
+      <div className="md-fadein" style={{ width: "100%", maxWidth: "100%" }}>
 
-        {/* Page Top Header Section */}
-        <div className="md-categories-header">
+        {/* Top Header */}
+        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
           <div>
-            <h1 className="md-categories-title">Categories</h1>
-            <p className="md-categories-subtitle">
-              Organize your notes into meaningful groups.
-            </p>
+            <h2 className="mb-0" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, color: "var(--md-text-dark)" }}>
+              Categories
+            </h2>
+            <p className="text-muted small mb-0">Organize your notes into meaningful groups.</p>
           </div>
           <button
             type="button"
-            className="md-btn md-btn-primary md-add-category-btn"
+            className="md-btn md-btn-primary"
             onClick={() => {
               setNewCategoryName("");
               setIsAddModalOpen(true);
             }}
           >
-            <i className="bi bi-plus-lg" />
-            <span>Add Category</span>
+            <i className="bi bi-plus-lg me-1" />
+            Add Category
           </button>
-        </div>
-
-        {/* Search & Stats Bar */}
-        <div className="md-categories-toolbar">
-          <div className="md-search-box">
-            <i className="bi bi-search md-search-icon" />
-            <input
-              type="text"
-              className="md-search-input"
-              placeholder="Search categories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search categories"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                className="md-search-clear"
-                onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
-              >
-                <i className="bi bi-x-circle-fill" />
-              </button>
-            )}
-          </div>
-          <div className="md-categories-count-badge">
-            <span className="fw-semibold text-dark">{filteredCategories.length}</span>
-            <span className="text-muted ms-1">
-              {filteredCategories.length === 1 ? "category" : "categories"}
-            </span>
-          </div>
         </div>
 
         {/* ===================== LOADING STATE ===================== */}
@@ -360,7 +390,7 @@ export default function Categories() {
               <span className="visually-hidden">Loading...</span>
             </div>
             <h5 className="mt-3 fw-bold text-dark">Loading Categories...</h5>
-            <p className="text-muted">Fetching your categories and note counts.</p>
+            <p className="text-muted">Fetching your categories and notes.</p>
           </div>
         )}
 
@@ -372,186 +402,512 @@ export default function Categories() {
             </div>
             <h5 className="mt-2 fw-bold text-dark">Unable to load categories</h5>
             <p className="text-muted">{error}</p>
-            <button
-              type="button"
-              className="md-btn md-btn-primary mt-2"
-              onClick={loadData}
-            >
-              <i className="bi bi-arrow-clockwise me-1" />
-              Retry
+            <button type="button" className="md-btn md-btn-primary mt-2" onClick={loadData}>
+              <i className="bi bi-arrow-clockwise me-1" /> Retry
             </button>
           </div>
         )}
 
-        {/* ===================== EMPTY STATE (No Categories) ===================== */}
-        {!loading && !error && categories.length === 0 && (
-          <div className="md-categories-state-box md-empty-state">
-            <div className="md-state-icon">📁</div>
-            <h4 className="mt-3 fw-bold text-dark">No Categories Yet</h4>
-            <p className="text-muted" style={{ maxWidth: 420 }}>
-              Create categories to organize your notes and keep your workspace clean.
-            </p>
-            <button
-              type="button"
-              className="md-btn md-btn-primary mt-2"
-              onClick={() => {
-                setNewCategoryName("");
-                setIsAddModalOpen(true);
-              }}
-            >
-              <i className="bi bi-plus-lg me-1" />
-              Create Category
-            </button>
-          </div>
-        )}
+        {/* ===================== MAIN TWO-COLUMN NOTES LAYOUT ===================== */}
+        {!loading && !error && (
+          <div className="notes-layout mt-3">
 
-        {/* ===================== NO SEARCH RESULTS ===================== */}
-        {!loading && !error && categories.length > 0 && filteredCategories.length === 0 && (
-          <div className="md-categories-state-box md-empty-state">
-            <div className="md-state-icon">🔍</div>
-            <h5 className="mt-3 fw-bold text-dark">No matching categories</h5>
-            <p className="text-muted">
-              No categories found matching "{searchQuery}".
-            </p>
-            <button
-              type="button"
-              className="md-btn md-btn-ghost mt-2"
-              onClick={() => setSearchQuery("")}
-            >
-              Clear Search
-            </button>
-          </div>
-        )}
+            {/* LEFT COLUMN: Categories Card (Matching image from Note page) */}
+            <div className="sidebar">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h4 className="mb-0">Categories</h4>
+                <span className="badge bg-secondary">{notes.length} notes</span>
+              </div>
 
-        {/* ===================== CATEGORIES GRID ===================== */}
-        {!loading && !error && filteredCategories.length > 0 && (
-          <div className="md-categories-grid">
-            {filteredCategories.map((cat) => {
-              const count = noteCountMap[cat.name] || 0;
-              const folderCount = (cat.folders || []).length;
-              const icon = getCategoryIcon(cat.name);
-              const isMenuOpen = activeMenuId === cat._id;
+              {/* All Notes Option */}
+              <div
+                className={`category-item ${selectedCategory === "All Notes" ? "active-category" : ""}`}
+                onClick={() => {
+                  setSelectedCategory("All Notes");
+                  setSelectedFolder("");
+                }}
+              >
+                <div className="d-flex align-items-center gap-2">
+                  <span>📁</span>
+                  <span className="fw-semibold">All Notes</span>
+                </div>
+                <span className="badge rounded-pill bg-light text-dark small">
+                  {notes.length}
+                </span>
+              </div>
 
-              return (
-                <div
-                  key={cat._id}
-                  className="md-category-card"
-                  onClick={() => handleViewCategoryNotes(cat.name)}
-                  tabIndex={0}
-                  role="button"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleViewCategoryNotes(cat.name);
-                  }}
-                >
-                  {/* Card Header: Icon + Menu */}
-                  <div className="md-category-card-header">
-                    <div className="md-category-card-icon" title={cat.name}>
-                      {icon}
-                    </div>
+              {/* Categories with Subfolders & Actions */}
+              {categories.map((cat) => {
+                const catNotes = notes.filter((n) => n.category === cat.name);
+                const isSelected = selectedCategory === cat.name && !selectedFolder;
+                const isCatActive = selectedCategory === cat.name;
+                const isExpanded = expandedCategories[cat._id] ?? isCatActive;
+                const isAddingFolder = activeFolderInputCatId === cat._id;
+                const catFolders = cat.folders || [];
 
-                    {/* Actions Menu */}
+                return (
+                  <div key={cat._id} className="category-group">
                     <div
-                      className="md-category-menu-wrapper"
-                      onClick={(e) => e.stopPropagation()}
+                      className={`category-item ${
+                        isSelected ? "active-category" : isCatActive ? "category-parent-active" : ""
+                      }`}
                     >
-                      <button
-                        type="button"
-                        className="md-category-menu-btn"
-                        aria-label="Category options"
-                        aria-expanded={isMenuOpen}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveMenuId(isMenuOpen ? null : cat._id);
+                      {/* Expand/Collapse Chevron + Category Name */}
+                      <div
+                        className="d-flex align-items-center gap-2 flex-grow-1"
+                        style={{ cursor: "pointer", minWidth: 0 }}
+                        onClick={() => {
+                          setSelectedCategory(cat.name);
+                          setSelectedFolder("");
+                          setExpandedCategories((prev) => ({
+                            ...prev,
+                            [cat._id]: true,
+                          }));
                         }}
                       >
-                        <i className="bi bi-three-dots-vertical" />
-                      </button>
+                        {catFolders.length > 0 ? (
+                          <button
+                            type="button"
+                            className="btn-chevron"
+                            onClick={(e) => toggleCategoryExpand(cat._id, e)}
+                            title={isExpanded ? "Collapse folders" : "Expand folders"}
+                          >
+                            <i className={`bi bi-chevron-${isExpanded ? "down" : "right"}`} />
+                          </button>
+                        ) : (
+                          <span className="chevron-spacer" />
+                        )}
+                        <span>📁</span>
+                        <span className="fw-semibold category-label text-truncate" title={cat.name}>
+                          {cat.name}
+                        </span>
+                      </div>
 
-                      {isMenuOpen && (
-                        <div className="md-category-dropdown">
-                          <button
-                            type="button"
-                            className="md-dropdown-item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveMenuId(null);
-                              handleViewCategoryNotes(cat.name);
+                      {/* Actions: Notes count, "+ Folder" button, Edit button, Delete button */}
+                      <div className="d-flex align-items-center gap-1 flex-shrink-0">
+                        <span className="badge rounded-pill bg-light text-dark small" title={`${catNotes.length} note(s)`}>
+                          {catNotes.length}
+                        </span>
+
+                        {/* Quick "+ Folder" button */}
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title={`Create new folder in "${cat.name}"`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedCategories((prev) => ({ ...prev, [cat._id]: true }));
+                            setActiveFolderInputCatId(isAddingFolder ? null : cat._id);
+                            setNewFolderName("");
+                          }}
+                        >
+                          <i className="bi bi-folder-plus" />
+                        </button>
+
+                        {/* Edit Category Button */}
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title={`Edit category "${cat.name}"`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCategory(cat);
+                            setEditCategoryName(cat.name);
+                          }}
+                        >
+                          <i className="bi bi-pencil" />
+                        </button>
+
+                        {/* Delete Category Button */}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger btn-icon"
+                          title={`Delete category "${cat.name}"`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingCategory(cat);
+                          }}
+                        >
+                          <i className="bi bi-x-lg" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Inline "New Folder in Category" Input */}
+                    {isAddingFolder && (
+                      <div className="subfolder-create-inline p-2">
+                        <div className="input-group input-group-sm">
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            placeholder={`New folder in ${cat.name}...`}
+                            value={newFolderName}
+                            onChange={(e) => setNewFolderName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleCreateFolder(cat._id, newFolderName);
+                              } else if (e.key === "Escape") {
+                                setActiveFolderInputCatId(null);
+                              }
                             }}
+                            autoFocus
+                          />
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => handleCreateFolder(cat._id, newFolderName)}
                           >
-                            <i className="bi bi-journal-text me-2" />
-                            View Notes
+                            Add
                           </button>
                           <button
-                            type="button"
-                            className="md-dropdown-item"
-                            onClick={(e) => openEditModal(cat, e)}
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => setActiveFolderInputCatId(null)}
                           >
-                            <i className="bi bi-pencil me-2" />
-                            Edit Category
-                          </button>
-                          <div className="md-dropdown-divider" />
-                          <button
-                            type="button"
-                            className="md-dropdown-item text-danger"
-                            onClick={(e) => openDeleteModal(cat, e)}
-                          >
-                            <i className="bi bi-trash3 me-2" />
-                            Delete Category
+                            ✕
                           </button>
                         </div>
-                      )}
-                    </div>
-                  </div>
+                      </div>
+                    )}
 
-                  {/* Card Body */}
-                  <div className="md-category-card-body">
-                    <h3 className="md-category-name" title={cat.name}>
-                      {cat.name}
-                    </h3>
-                    <div className="md-category-meta">
-                      <span className="md-category-note-count">
-                        <i className="bi bi-file-text me-1" />
-                        {count} {count === 1 ? "Note" : "Notes"}
-                      </span>
-                      {folderCount > 0 && (
-                        <span className="md-category-folder-count">
-                          <i className="bi bi-folder2 me-1" />
-                          {folderCount} {folderCount === 1 ? "folder" : "folders"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    {/* Folders List (Nested inside Category) */}
+                    {isExpanded && (
+                      <div className="subfolder-list">
+                        {/* All in Category Option */}
+                        <div
+                          className={`subfolder-item ${
+                            selectedCategory === cat.name && !selectedFolder ? "active-subfolder" : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedCategory(cat.name);
+                            setSelectedFolder("");
+                          }}
+                        >
+                          <span className="small">📂 All {cat.name}</span>
+                          <span className="badge bg-light text-secondary small-badge">
+                            {catNotes.length}
+                          </span>
+                        </div>
 
-                  {/* Card Footer: View Notes Action */}
-                  <div className="md-category-card-footer">
-                    <span className="md-view-notes-link">
-                      View Notes
-                      <i className="bi bi-arrow-right ms-1" />
+                        {/* General / Root (Notes with no folder) */}
+                        {catNotes.some((n) => !n.folder) && catFolders.length > 0 && (
+                          <div
+                            className={`subfolder-item ${
+                              selectedCategory === cat.name && selectedFolder === "__general__"
+                                ? "active-subfolder"
+                                : ""
+                            }`}
+                            onClick={() => {
+                              setSelectedCategory(cat.name);
+                              setSelectedFolder("__general__");
+                            }}
+                          >
+                            <span className="small">📂 General (Root)</span>
+                            <span className="badge bg-light text-secondary small-badge">
+                              {catNotes.filter((n) => !n.folder).length}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Defined Folders in this Category */}
+                        {catFolders.map((f) => {
+                          const folderNotes = catNotes.filter((n) => n.folder === f.name);
+                          const isFolderActive =
+                            selectedCategory === cat.name && selectedFolder === f.name;
+
+                          return (
+                            <div
+                              key={f._id}
+                              className={`subfolder-item ${isFolderActive ? "active-subfolder" : ""}`}
+                              onClick={() => {
+                                setSelectedCategory(cat.name);
+                                setSelectedFolder(f.name);
+                              }}
+                            >
+                              <span className="small text-truncate" title={f.name}>
+                                📂 {f.name}
+                              </span>
+
+                              <div className="d-flex align-items-center gap-1">
+                                <span className="badge bg-light text-secondary small-badge">
+                                  {folderNotes.length}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="btn-folder-delete"
+                                  title={`Delete folder "${f.name}"`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteFolder(cat._id, f._id, f.name);
+                                  }}
+                                >
+                                  <i className="bi bi-x" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Quick "+ New Folder" link */}
+                        {!isAddingFolder && (
+                          <button
+                            type="button"
+                            className="btn-add-subfolder-link"
+                            onClick={() => {
+                              setActiveFolderInputCatId(cat._id);
+                              setNewFolderName("");
+                            }}
+                          >
+                            <i className="bi bi-folder-plus" />
+                            <span>+ New Folder</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Quick Inline "Add Category" Form at bottom of sidebar */}
+              <div className="mt-3 pt-2" style={{ borderTop: "1px dashed var(--md-card-border)" }}>
+                {isQuickAddingCat ? (
+                  <div className="input-group input-group-sm">
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      placeholder="Category name..."
+                      value={quickCatName}
+                      onChange={(e) => setQuickCatName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleCreateCategory(quickCatName);
+                        } else if (e.key === "Escape") {
+                          setIsQuickAddingCat(false);
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      className="btn btn-sm text-white"
+                      style={{ backgroundColor: "var(--md-primary)" }}
+                      onClick={() => handleCreateCategory(quickCatName)}
+                      disabled={creating || !quickCatName.trim()}
+                    >
+                      Add
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => setIsQuickAddingCat(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-sm w-100 d-flex align-items-center justify-content-center gap-1 text-muted"
+                    style={{ background: "#FAF7F2", border: "1px solid var(--md-card-border)", borderRadius: "8px" }}
+                    onClick={() => {
+                      setIsQuickAddingCat(true);
+                      setQuickCatName("");
+                    }}
+                  >
+                    <i className="bi bi-plus-lg" />
+                    <span>+ New Category</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Search Bar & Notes Content (Matching image from Note page) */}
+            <div className="notes-content">
+              {/* Search Notes Input */}
+              <input
+                type="text"
+                className="form-control mb-3"
+                placeholder="Search Notes by title, content, or folder..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search notes"
+              />
+
+              {/* Active Filter Breadcrumb */}
+              {(selectedCategory !== "All Notes" || selectedFolder) && (
+                <div className="category-filter-breadcrumb mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <span className="text-muted small">Viewing:</span>
+                    <span
+                      className="badge bg-secondary cursor-pointer"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setSelectedFolder("")}
+                      title="Click to view all folders in this category"
+                    >
+                      📁 {selectedCategory}
                     </span>
-                    <div className="md-category-quick-actions" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className="md-quick-action-btn"
-                        title="Edit category"
-                        aria-label={`Edit ${cat.name}`}
-                        onClick={(e) => openEditModal(cat, e)}
-                      >
-                        <i className="bi bi-pencil" />
-                      </button>
-                      <button
-                        type="button"
-                        className="md-quick-action-btn md-quick-action-delete"
-                        title="Delete category"
-                        aria-label={`Delete ${cat.name}`}
-                        onClick={(e) => openDeleteModal(cat, e)}
-                      >
-                        <i className="bi bi-trash" />
-                      </button>
-                    </div>
+                    {selectedFolder && (
+                      <>
+                        <i className="bi bi-chevron-right text-muted small" />
+                        <span className="badge bg-info text-dark">
+                          📂 {selectedFolder === "__general__" ? "General (No folder)" : selectedFolder}
+                        </span>
+                      </>
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary py-0 px-2"
+                    style={{ fontSize: "0.8rem" }}
+                    onClick={() => {
+                      setSelectedCategory("All Notes");
+                      setSelectedFolder("");
+                    }}
+                  >
+                    Show All Notes
+                  </button>
                 </div>
-              );
-            })}
+              )}
+
+              {/* Notes Grid */}
+              {filteredNotes.length === 0 ? (
+                <div className="md-categories-state-box">
+                  <div className="md-state-icon">📝</div>
+                  <h5 className="mt-3 fw-bold text-dark">
+                    {search.trim() ? "No matching notes found" : `No notes in "${selectedCategory}"`}
+                  </h5>
+                  <p className="text-muted" style={{ maxWidth: 420 }}>
+                    {search.trim()
+                      ? `No notes match your search term "${search}".`
+                      : `You haven't created any notes in ${selectedCategory === "All Notes" ? "your account" : `"${selectedCategory}"`} yet.`}
+                  </p>
+                  <button
+                    type="button"
+                    className="md-btn md-btn-primary mt-2"
+                    onClick={() => handleOpenInNotes(selectedCategory !== "All Notes" ? selectedCategory : "")}
+                  >
+                    <i className="bi bi-pencil-square me-1" />
+                    + Create Note in {selectedCategory === "All Notes" ? "Notes" : selectedCategory}
+                  </button>
+                </div>
+              ) : (
+                <div className="notes-grid">
+                  {filteredNotes.map((note) => (
+                    <div key={note._id} className="note-card">
+                      {/* Top Badges */}
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <div className="d-flex align-items-center gap-1 flex-wrap">
+                          <span className="badge bg-secondary">{note.category}</span>
+                          {note.folder && (
+                            <span
+                              className="badge text-dark"
+                              style={{ backgroundColor: "#e2d5c8", border: "1px solid #d4c2b2" }}
+                              title={`Folder: ${note.folder}`}
+                            >
+                              <i className="bi bi-folder2 me-1" />
+                              {note.folder}
+                            </span>
+                          )}
+                        </div>
+                        {note.attachments && note.attachments.length > 0 && (
+                          <span className="attachment-badge" title={`${note.attachments.length} attachment(s)`}>
+                            <i className="bi bi-paperclip" />
+                            <span>{note.attachments.length}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Note Title */}
+                      <h4 className="note-title">{note.title}</h4>
+
+                      {/* Deadline */}
+                      {note.deadline && (
+                        <p className="note-deadline mb-2">
+                          <i className="bi bi-calendar-event me-1" />
+                          Due: {new Date(note.deadline).toLocaleDateString("en-GB").replace(/\//g, "-")}
+                        </p>
+                      )}
+
+                      {/* Note Description */}
+                      <p className="note-content mb-3">{note.description}</p>
+
+                      {/* Attachments Section in Note Card */}
+                      {note.attachments && note.attachments.length > 0 && (
+                        <div className="note-attachments-card-section mb-3">
+                          <button
+                            type="button"
+                            className="note-attachments-summary-btn"
+                            onClick={() => toggleCardExpanded(note._id)}
+                          >
+                            <i className="bi bi-paperclip" />
+                            <span>
+                              {note.attachments.length} {note.attachments.length === 1 ? "Attachment" : "Attachments"}
+                            </span>
+                            <i
+                              className={`bi ${expandedCards[note._id] ? "bi-chevron-up" : "bi-chevron-down"} ms-1`}
+                            />
+                          </button>
+
+                          {expandedCards[note._id] && (
+                            <div className="note-attachments-expanded">
+                              {note.attachments.map((att, idx) => {
+                                const info = getFileInfo(att);
+                                return (
+                                  <div key={att._id || idx} className="note-attachment-row-mini">
+                                    <div className="d-flex align-items-center gap-2 min-w-0">
+                                      <i className={`bi ${info.icon}`} style={{ color: info.color }} />
+                                      <span className="mini-name" title={att.originalName}>
+                                        {att.originalName}
+                                      </span>
+                                      <span className="text-muted small">
+                                        ({formatFileSize(att.size)})
+                                      </span>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-1">
+                                      {info.isPreviewable && (
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm btn-light p-1"
+                                          title="Preview"
+                                          onClick={() => setPreviewAttachment(att)}
+                                        >
+                                          <i className="bi bi-eye" />
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light p-1"
+                                        title="Download"
+                                        onClick={() => downloadAttachment(att)}
+                                      >
+                                        <i className="bi bi-download" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Card Footer Actions */}
+                      <div className="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => handleOpenInNotes(note.category)}
+                        >
+                          <i className="bi bi-journal-text me-1" />
+                          Open in Notes
+                        </button>
+                        <span className="text-muted small">
+                          {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : ""}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -588,7 +944,12 @@ export default function Categories() {
               />
             </div>
 
-            <form onSubmit={handleCreateCategory}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateCategory(newCategoryName);
+              }}
+            >
               <div className="md-modal-body">
                 <label className="md-form-label" htmlFor="newCategoryName">
                   Category Name <span className="text-danger">*</span>
@@ -605,7 +966,7 @@ export default function Categories() {
                   onChange={(e) => setNewCategoryName(e.target.value)}
                 />
                 <div className="d-flex justify-content-between mt-1 text-muted" style={{ fontSize: "0.75rem" }}>
-                  <span>Give your notes a clear organizing topic.</span>
+                  <span>Organize your notes into meaningful groups.</span>
                   <span>{newCategoryName.length}/50</span>
                 </div>
               </div>
@@ -804,6 +1165,14 @@ export default function Categories() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Attachment Preview Modal */}
+      {previewAttachment && (
+        <AttachmentPreview
+          attachment={previewAttachment}
+          onClose={() => setPreviewAttachment(null)}
+        />
       )}
 
     </Layout>
