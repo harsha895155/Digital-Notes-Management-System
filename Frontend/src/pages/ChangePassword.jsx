@@ -7,17 +7,19 @@ import { toast } from "../context/ToastContext";
 function ChangePassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChangePassword = async () => {
-    if (!email || !currentPassword || !newPassword || !confirmPassword) {
+    if (!email || !newPassword || !confirmPassword) {
       toast.warning("Please fill in all required fields.", "Incomplete Fields");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.warning("New password must be at least 6 characters long.", "Password Too Short");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -26,12 +28,12 @@ function ChangePassword() {
     }
     try {
       setLoading(true);
-      const res = await axios.put(`${API_BASE_URL}/api/change-password`, { email, currentPassword, newPassword });
+      const res = await axios.put(`${API_BASE_URL}/api/change-password`, { email, newPassword });
       toast.success(res.data.message || "Password updated successfully!", "Success");
       setTimeout(() => { navigate("/login"); }, 1000);
     } catch (err) {
       toast.error(
-        err.response?.data?.message || "Password update failed. Please check your current password.",
+        err.response?.data?.message || "Password update failed. Please try again.",
         "Update Failed"
       );
     } finally {
@@ -46,9 +48,9 @@ function ChangePassword() {
         <div className="md-auth-left" style={{ flex: "0 0 280px" }}>
           <div className="md-auth-brand-icon">🔐</div>
           <div className="md-auth-brand-name">Security</div>
-          <div className="md-auth-brand-sub">Password Management</div>
+          <div className="md-auth-brand-sub">Password Reset</div>
           <p className="md-auth-tagline">
-            Keep your account secure by using a strong, unique password that you don't use elsewhere.
+            Keep your account secure by choosing a strong, unique password for your MindDesk workspace.
           </p>
           <div className="md-auth-features" style={{ marginTop: "20px" }}>
             <div className="md-auth-feature">
@@ -69,8 +71,8 @@ function ChangePassword() {
         {/* Right Panel */}
         <div className="md-auth-right">
           <div className="md-auth-right-header">
-            <div className="md-auth-title">Change Password 🔒</div>
-            <div className="md-auth-subtitle">Update your account password securely</div>
+            <div className="md-auth-title">Reset Password 🔒</div>
+            <div className="md-auth-subtitle">Enter your email and create a new password</div>
           </div>
 
           <form onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }} autoComplete="off" noValidate>
@@ -94,35 +96,6 @@ function ChangePassword() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </div>
-            </div>
-
-            <div className="md-form-group">
-              <label className="md-form-label" htmlFor="cp-current">Current Password</label>
-              <div className="md-form-control-icon">
-                <i className="bi bi-lock" />
-                <input
-                  id="cp-current"
-                  name="user_cp_current"
-                  type={showCurrent ? "text" : "password"}
-                  className="md-form-control"
-                  placeholder="Your current password"
-                  autoComplete="new-password"
-                  readOnly
-                  onFocus={(e) => e.target.removeAttribute("readOnly")}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  style={{ paddingRight: "46px" }}
-                />
-                <button
-                  type="button"
-                  className="md-pw-toggle-btn"
-                  onClick={() => setShowCurrent(!showCurrent)}
-                  title={showCurrent ? "Hide password" : "Show password"}
-                  aria-label={showCurrent ? "Hide password" : "Show password"}
-                >
-                  <i className={`bi ${showCurrent ? "bi-eye-slash-fill" : "bi-eye-fill"}`} />
-                </button>
               </div>
             </div>
 

@@ -385,35 +385,51 @@ app.post("/api/auth/reset-password", passwordResetLimiter, async (req, res) => {
 });
 
 // PUT /api/change-password
-app.put("/api/change-password", authMiddleware, async (req, res) => {
+// PUT /api/change-password
+app.put("/api/change-password", async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { email, currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Current and new password are required." });
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters long." });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ message: "New password must be at least 6 characters." });
+    // Determine target user by token or email
+    let user = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        user = await User.findById(decoded.id);
+      } catch {
+        // Token invalid or expired, fallback to email
+      }
     }
 
-    const user = await User.findById(req.user.id);
+    if (!user && email) {
+      user = await User.findOne({ email: email.toLowerCase().trim() });
+    }
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User account not found." });
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Incorrect current password." });
+    // If current password provided, verify it
+    if (currentPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Incorrect current password." });
+      }
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    // Invalidate other refresh tokens
+    // Invalidate sessions across devices
     await tokenService.revokeAllUserTokens(user._id);
 
-    res.status(200).json({ message: "Password updated successfully." });
+    res.status(200).json({ message: "Password updated successfully! You can now log in with your new password." });
   } catch (error) {
     res.status(500).json({ message: "Failed to update password", error: error.message });
   }
