@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import API_BASE_URL, { getAuthHeaders } from "../api/config";
+import api from "../api/config";
 import { toast, showConfirm } from "../context/ToastContext";
 import Layout from "../components/Layout";
 import AttachmentPreview from "../components/AttachmentPreview";
 import { formatFileSize, getFileInfo, downloadAttachment } from "../utils/fileUtils";
+import { getOfflineStore, saveOfflineStore, queueOfflineMutation } from "../utils/offlineSync";
 
 export default function Categories() {
   const navigate = useNavigate();
@@ -55,7 +55,7 @@ export default function Categories() {
   const [expandedCards, setExpandedCards] = useState({});
   const [previewAttachment, setPreviewAttachment] = useState(null);
 
-  // Fetch Categories & Notes
+  // Fetch Categories & Notes (Instant Cache-First + Stale-While-Revalidate)
   const loadData = async () => {
     const token = localStorage.getItem("token");
     if (!token || !user?.email) {
@@ -63,24 +63,47 @@ export default function Categories() {
       return;
     }
 
+    // Step 1: Immediately read cached data from IndexedDB (0ms wait)
     try {
-      setLoading(true);
-      setError(null);
+      const cachedCats = await getOfflineStore("categories");
+      const cachedNotes = await getOfflineStore("notes");
+      if (cachedCats && cachedCats.length > 0) {
+        setCategories(cachedCats);
+        if (cachedNotes) setNotes(cachedNotes);
+        setLoading(false); // Instant render without waiting!
+      }
+    } catch (e) {
+      console.warn("Could not read offline store:", e);
+    }
 
+    // Step 2: Fetch fresh data from backend
+    try {
       const [catRes, notesRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/categories/${user.email}`, {
-          headers: getAuthHeaders(),
-        }),
-        axios.get(`${API_BASE_URL}/api/notes/${user.email}`, {
-          headers: getAuthHeaders(),
-        }),
+        api.get(`/api/categories/${user.email}`),
+        api.get(`/api/notes/${user.email}`),
       ]);
 
-      setCategories(catRes.data || []);
-      setNotes(notesRes.data || []);
+      if (catRes.data) {
+        setCategories(catRes.data);
+        saveOfflineStore("categories", catRes.data);
+      }
+      if (notesRes.data) {
+        setNotes(notesRes.data);
+        saveOfflineStore("notes", notesRes.data);
+      }
+      setError(null);
     } catch (err) {
-      console.error("Failed to load categories & notes:", err);
-      setError("Unable to load categories. Please check your connection and try again.");
+      console.warn("Network request for categories failed or timed out:", err);
+      setCategories((prev) => {
+        if (prev.length === 0) {
+          setError(
+            !navigator.onLine
+              ? "You are currently offline. Any categories saved locally will show here."
+              : "Connecting to server is taking a moment. Click Retry below."
+          );
+        }
+        return prev;
+      });
     } finally {
       setLoading(false);
     }
@@ -152,16 +175,12 @@ export default function Categories() {
     }
 
     try {
-      await axios.post(
-        `${API_BASE_URL}/api/categories/${categoryId}/folders`,
-        { name: trimmed },
-        { headers: getAuthHeaders() }
-      );
+      await api.post(`/api/categories/${categoryId}/folders`, { name: trimmed });
 
-      const res = await axios.get(`${API_BASE_URL}/api/categories/${user.email}`, {
-        headers: getAuthHeaders(),
-      });
-      setCategories(res.data || []);
+      const res = await api.get(`/api/categories/${user.email}`);
+      const updated = res.data || [];
+      setCategories(updated);
+      saveOfflineStore("categories", updated);
       setActiveFolderInputCatId(null);
       setNewFolderName("");
       setExpandedCategories((prev) => ({ ...prev, [categoryId]: true }));
@@ -184,22 +203,20 @@ export default function Categories() {
     if (!confirmed) return;
 
     try {
-      await axios.delete(
-        `${API_BASE_URL}/api/categories/${categoryId}/folders/${folderId}`,
-        { headers: getAuthHeaders() }
-      );
+      await api.delete(`/api/categories/${categoryId}/folders/${folderId}`);
 
       const [catRes, notesRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/categories/${user.email}`, {
-          headers: getAuthHeaders(),
-        }),
-        axios.get(`${API_BASE_URL}/api/notes/${user.email}`, {
-          headers: getAuthHeaders(),
-        }),
+        api.get(`/api/categories/${user.email}`),
+        api.get(`/api/notes/${user.email}`),
       ]);
 
-      setCategories(catRes.data || []);
-      setNotes(notesRes.data || []);
+      const updatedCats = catRes.data || [];
+      const updatedNotes = notesRes.data || [];
+      setCategories(updatedCats);
+      setNotes(updatedNotes);
+      saveOfflineStore("categories", updatedCats);
+      saveOfflineStore("notes", updatedNotes);
+
       if (selectedFolder === folderName) setSelectedFolder("");
       toast.success(`Folder "${folderName}" removed successfully.`, "Folder Deleted");
     } catch (err) {
@@ -229,16 +246,43 @@ export default function Categories() {
       return;
     }
 
+    // Offline handling
+    if (!navigator.onLine) {
+      const localCat = {
+        _id: `local_cat_${Date.now()}`,
+        name: trimmed,
+        userEmail: user.email,
+        folders: [],
+        createdAt: new Date().toISOString(),
+      };
+      const updated = [...categories, localCat];
+      setCategories(updated);
+      saveOfflineStore("categories", updated);
+      await queueOfflineMutation({
+        entity: "categories",
+        action: "CREATE",
+        data: { name: trimmed, userEmail: user.email },
+      });
+      setNewCategoryName("");
+      setQuickCatName("");
+      setIsQuickAddingCat(false);
+      setIsAddModalOpen(false);
+      setSelectedCategory(trimmed);
+      toast.info(`Category "${trimmed}" saved locally (Offline mode).`, "Category Added");
+      return;
+    }
+
     try {
       setCreating(true);
-      const res = await axios.post(
-        `${API_BASE_URL}/api/categories`,
-        { name: trimmed, userEmail: user.email },
-        { headers: getAuthHeaders() }
-      );
+      const res = await api.post(`/api/categories`, {
+        name: trimmed,
+        userEmail: user.email,
+      });
 
       if (res.data) {
-        setCategories((prev) => [...prev, res.data]);
+        const updated = [...categories, res.data];
+        setCategories(updated);
+        saveOfflineStore("categories", updated);
         setNewCategoryName("");
         setQuickCatName("");
         setIsQuickAddingCat(false);
@@ -286,19 +330,21 @@ export default function Categories() {
       setSavingEdit(true);
       const oldName = editingCategory.name;
 
-      const res = await axios.put(
-        `${API_BASE_URL}/api/categories/${editingCategory._id}`,
-        { name: trimmed },
-        { headers: getAuthHeaders() }
+      const res = await api.put(`/api/categories/${editingCategory._id}`, {
+        name: trimmed,
+      });
+
+      const updatedCats = categories.map((c) =>
+        c._id === editingCategory._id ? { ...c, name: trimmed } : c
+      );
+      const updatedNotes = notes.map((n) =>
+        n.category === oldName ? { ...n, category: trimmed } : n
       );
 
-      setCategories((prev) =>
-        prev.map((c) => (c._id === editingCategory._id ? { ...c, name: trimmed } : c))
-      );
-
-      setNotes((prevNotes) =>
-        prevNotes.map((n) => (n.category === oldName ? { ...n, category: trimmed } : n))
-      );
+      setCategories(updatedCats);
+      setNotes(updatedNotes);
+      saveOfflineStore("categories", updatedCats);
+      saveOfflineStore("notes", updatedNotes);
 
       if (selectedCategory === oldName) {
         setSelectedCategory(trimmed);
@@ -319,14 +365,16 @@ export default function Categories() {
 
     try {
       setDeleting(true);
-      await axios.delete(`${API_BASE_URL}/api/categories/${deletingCategory._id}`, {
-        headers: getAuthHeaders(),
-      });
+      await api.delete(`/api/categories/${deletingCategory._id}`);
 
       const deletedName = deletingCategory.name;
+      const updatedCats = categories.filter((c) => c._id !== deletingCategory._id);
+      const updatedNotes = notes.filter((n) => n.category !== deletedName);
 
-      setCategories((prev) => prev.filter((c) => c._id !== deletingCategory._id));
-      setNotes((prev) => prev.filter((n) => n.category !== deletedName));
+      setCategories(updatedCats);
+      setNotes(updatedNotes);
+      saveOfflineStore("categories", updatedCats);
+      saveOfflineStore("notes", updatedNotes);
 
       if (selectedCategory === deletedName) {
         setSelectedCategory("All Notes");

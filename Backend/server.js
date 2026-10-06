@@ -538,7 +538,7 @@ app.get("/api/notes", authMiddleware, async (req, res) => {
       filter.folder = folder === "__general__" ? "" : folder;
     }
 
-    const notes = await Note.find(filter).sort({ createdAt: -1 });
+    const notes = await Note.find(filter).sort({ createdAt: -1 }).lean();
     res.status(200).json(notes);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch notes", error: error.message });
@@ -553,7 +553,7 @@ app.get("/api/notes/:email", authMiddleware, verifyEmailOwnership, async (req, r
         { userEmail: req.user.email },
         { "shares.userEmail": req.user.email },
       ],
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).lean();
     res.status(200).json(notes);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch notes", error: error.message });
@@ -789,7 +789,7 @@ app.delete("/api/notes/:id/share/:email", authMiddleware, validateIdParam("id"),
 
 app.get("/api/categories", authMiddleware, async (req, res) => {
   try {
-    const categories = await Category.find({ userEmail: req.user.email });
+    const categories = await Category.find({ userEmail: req.user.email }).lean();
     res.status(200).json(categories);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch categories", error: error.message });
@@ -798,7 +798,7 @@ app.get("/api/categories", authMiddleware, async (req, res) => {
 
 app.get("/api/categories/:email", authMiddleware, verifyEmailOwnership, async (req, res) => {
   try {
-    const categories = await Category.find({ userEmail: req.user.email });
+    const categories = await Category.find({ userEmail: req.user.email }).lean();
     res.status(200).json(categories);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch categories", error: error.message });
