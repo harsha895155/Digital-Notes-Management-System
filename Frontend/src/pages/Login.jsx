@@ -102,7 +102,7 @@ function Login() {
             <div className="md-form-group">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                 <label className="md-form-label" htmlFor="login-password" style={{ marginBottom: 0 }}>Password</label>
-                <Link to="/change-password" className="md-auth-link" style={{ fontSize: "0.8rem" }}>
+                <Link to="/forgot-password" className="md-auth-link" style={{ fontSize: "0.8rem" }}>
                   Forgot password?
                 </Link>
               </div>

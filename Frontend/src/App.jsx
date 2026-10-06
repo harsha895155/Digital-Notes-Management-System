@@ -5,10 +5,13 @@ import { ToastProvider } from "./context/ToastContext";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ChangePassword from "./pages/ChangePassword";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Categories from "./pages/Categories";
 import Welcome from "./pages/Welcome";
+import SyncStatusBanner from "./components/SyncStatusBanner";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
@@ -18,11 +21,14 @@ function ProtectedRoute({ children }) {
 function App() {
   return (
     <ToastProvider>
+      <SyncStatusBanner />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/change-password" element={<ChangePassword />} />
 
           {/* Core App Views */}

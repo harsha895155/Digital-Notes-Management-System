@@ -48,8 +48,8 @@ const noteSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
-
     description: {
       type: String,
       required: true,
@@ -57,6 +57,7 @@ const noteSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
+      trim: true,
     },
     folder: {
       type: String,
@@ -70,6 +71,9 @@ const noteSchema = new mongoose.Schema(
     userEmail: {
       type: String,
       required: true,
+      lowercase: true,
+      trim: true,
+      index: true,
     },
     status: {
       type: String,
@@ -79,10 +83,68 @@ const noteSchema = new mongoose.Schema(
       type: [attachmentSchema],
       default: [],
     },
+    tags: {
+      type: [String],
+      default: [],
+      index: true,
+    },
+    isShared: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    shares: [
+      {
+        userEmail: {
+          type: String,
+          required: true,
+          lowercase: true,
+          trim: true,
+        },
+        permission: {
+          type: String,
+          enum: ["viewer", "editor"],
+          default: "viewer",
+        },
+        sharedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    activity: [
+      {
+        action: { type: String, required: true },
+        userEmail: { type: String, required: true },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    reminderTime: {
+      type: Date,
+      default: null,
+    },
+    reminderMinutesBefore: {
+      type: Number,
+      default: 0,
+    },
+    reminderSent: {
+      type: Boolean,
+      default: false,
+    },
+    aiSummary: {
+      summary: { type: String, default: "" },
+      summaryType: { type: String, default: "" },
+      generatedAt: { type: Date, default: null },
+    },
   },
   {
     timestamps: true,
   }
 );
+
+noteSchema.index({ userEmail: 1, createdAt: -1 });
+noteSchema.index({ userEmail: 1, category: 1 });
+noteSchema.index({ "shares.userEmail": 1 });
+noteSchema.index({ title: "text", description: "text", tags: "text" });
 
 module.exports = mongoose.model("Note", noteSchema);

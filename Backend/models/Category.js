@@ -22,12 +22,13 @@ const categorySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     userEmail: {
       type: String,
       required: true,
+      lowercase: true,
+      trim: true,
+      index: true,
     },
-
     folders: {
       type: [folderSchema],
       default: [],
@@ -38,7 +39,6 @@ const categorySchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "Category",
-  categorySchema
-);
+categorySchema.index({ userEmail: 1, name: 1 });
+
+module.exports = mongoose.model("Category", categorySchema);

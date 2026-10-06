@@ -48,23 +48,24 @@ const todoSchema = new mongoose.Schema(
     task: {
       type: String,
       required: true,
+      trim: true,
     },
-
     completed: {
       type: Boolean,
       default: false,
     },
-
     userEmail: {
       type: String,
       required: true,
+      lowercase: true,
+      trim: true,
+      index: true,
     },
-
     taskDate: {
       type: String,
       required: true,
+      index: true,
     },
-
     attachments: {
       type: [attachmentSchema],
       default: [],
@@ -75,7 +76,6 @@ const todoSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "Todo",
-  todoSchema
-);
+todoSchema.index({ userEmail: 1, taskDate: 1 });
+
+module.exports = mongoose.model("Todo", todoSchema);

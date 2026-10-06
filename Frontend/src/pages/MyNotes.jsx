@@ -7,6 +7,12 @@ import FileUpload from "../components/FileUpload";
 import AttachmentList from "../components/AttachmentList";
 import AttachmentPreview from "../components/AttachmentPreview";
 import { formatFileSize, getFileInfo, downloadAttachment } from "../utils/fileUtils";
+import DOMPurify from "dompurify";
+import RichTextEditor from "../components/RichTextEditor";
+import AISummaryModal from "../components/AISummaryModal";
+import ShareNoteModal from "../components/ShareNoteModal";
+import SearchModal from "../components/SearchModal";
+import { saveOfflineStore, getOfflineStore, queueOfflineMutation } from "../utils/offlineSync";
 
 function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
   const location = useLocation();
@@ -27,6 +33,17 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
   });
   const [selectedFolder, setSelectedFolder] = useState("");
   const [deadline, setDeadline] = useState("");
+
+  // Tag & Reminder states
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
+  const [selectedTag, setSelectedTag] = useState("All");
+  const [reminderTime, setReminderTime] = useState("at_deadline");
+
+  // Modals
+  const [aiModalNote, setAiModalNote] = useState(null);
+  const [shareModalNote, setShareModalNote] = useState(null);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
   // Folder states
   const [folder, setFolder] = useState("");
@@ -52,15 +69,20 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
 
   const fetchNotes = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user?.email) return;
 
       const res = await axios.get(`${API_BASE_URL}/api/notes/${user.email}`, {
         headers: getAuthHeaders(),
       });
       setNotes(res.data);
+      saveOfflineStore("notes", res.data);
     } catch (error) {
-      console.log(error);
+      console.log("Loading offline notes cache:", error);
+      const offlineNotes = await getOfflineStore("notes");
+      if (offlineNotes && offlineNotes.length > 0) {
+        setNotes(offlineNotes);
+      }
     }
   };
 
@@ -232,6 +254,19 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
     }));
   };
 
+  const handleAddTag = (e) => {
+    if (e) e.preventDefault();
+    const cleanTag = tagInput.trim().replace(/^#/, "");
+    if (cleanTag && !tags.includes(cleanTag)) {
+      setTags([...tags, cleanTag]);
+      setTagInput("");
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setTags(tags.filter((t) => t !== tagToRemove));
+  };
+
   const handleAddNote = async () => {
     if (!title.trim() || !content.trim() || !category) {
       toast.warning(
@@ -253,6 +288,41 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
         return;
       }
 
+      // Offline handler
+      if (!navigator.onLine) {
+        const offlineNote = {
+          _id: editId || `local_${Date.now()}`,
+          title: title.trim(),
+          description: content.trim(),
+          category,
+          folder: folder || "",
+          deadline: deadline || null,
+          reminderTime,
+          tags,
+          userEmail,
+          attachments: editId ? editAttachments : stagedAttachments,
+          updatedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        };
+
+        await queueOfflineMutation({
+          entity: "notes",
+          action: editId ? "UPDATE" : "CREATE",
+          id: editId,
+          data: offlineNote
+        });
+
+        if (editId) {
+          setNotes((prev) => prev.map((n) => (n._id === editId ? offlineNote : n)));
+        } else {
+          setNotes((prev) => [offlineNote, ...prev]);
+        }
+
+        toast.info("Note saved locally (Offline mode). Changes will sync when online.", "Saved Offline");
+        handleCancelEdit();
+        return;
+      }
+
       if (editId) {
         const res = await axios.put(
           `${API_BASE_URL}/api/notes/${editId}`,
@@ -262,6 +332,8 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
             category,
             folder: folder || "",
             deadline: deadline || null,
+            reminderTime,
+            tags,
             attachments: editAttachments,
           },
           { headers: getAuthHeaders() }
@@ -282,6 +354,8 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
             category,
             folder: folder || "",
             deadline: deadline || null,
+            reminderTime,
+            tags,
             userEmail,
             attachments: stagedAttachments,
           },
@@ -358,6 +432,8 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
     setContent(note.description || "");
     setCategory(note.category || "");
     setFolder(note.folder || "");
+    setTags(note.tags || []);
+    setReminderTime(note.reminderTime || "at_deadline");
     setCreatingFolderInForm(false);
     setDeadline(
       note.deadline
@@ -387,6 +463,9 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
     setContent("");
     setCategory("");
     setFolder("");
+    setTags([]);
+    setTagInput("");
+    setReminderTime("at_deadline");
     setCreatingFolderInForm(false);
     setFormFolderName("");
     setDeadline("");
@@ -678,21 +757,91 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
             )}
           </div>
 
-          <label className="mb-2 fw-semibold">Deadline (Optional)</label>
-          <input
-            type="date"
-            className="form-control mb-3"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-          />
+          <div className="row g-2 mb-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label fw-semibold small mb-1">Deadline (Optional)</label>
+              <input
+                type="date"
+                className="form-control"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label fw-semibold small mb-1">Reminder Notification</label>
+              <select
+                className="form-control"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+              >
+                <option value="at_deadline">At deadline</option>
+                <option value="15_min_before">15 minutes before</option>
+                <option value="30_min_before">30 minutes before</option>
+                <option value="1_hour_before">1 hour before</option>
+                <option value="1_day_before">1 day before</option>
+              </select>
+            </div>
+          </div>
 
-          <textarea
-            className="form-control mb-3"
-            rows="5"
-            placeholder="Write your note..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
+          {/* Tags Input */}
+          <div className="mb-3">
+            <label className="form-label fw-semibold small mb-1">Tags (Optional)</label>
+            <div className="d-flex flex-wrap gap-1 align-items-center mb-2">
+              {tags.map((t, idx) => (
+                <span key={idx} className="badge bg-light text-dark border d-flex align-items-center gap-1 py-1 px-2">
+                  #{t}
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0 text-danger"
+                    style={{ fontSize: "0.75rem", lineHeight: 1 }}
+                    onClick={() => handleRemoveTag(t)}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="input-group input-group-sm" style={{ maxWidth: "340px" }}>
+              <span className="input-group-text bg-light text-muted">#</span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="e.g. React, Exams, Priority"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+              />
+              <button type="button" className="btn btn-outline-secondary" onClick={handleAddTag}>
+                Add Tag
+              </button>
+            </div>
+          </div>
+
+          {/* Rich Text Editor */}
+          <div className="mb-3">
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <label className="form-label fw-semibold small mb-0">Note Content *</label>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-warning py-0 px-2 fw-semibold d-flex align-items-center gap-1"
+                style={{ fontSize: "0.8rem", color: "#854D0E", borderColor: "#FDE047" }}
+                onClick={() => setAiModalNote({ title, description: content })}
+                title="Summarize with AI"
+              >
+                <i className="bi bi-stars"></i> Summarize with AI
+              </button>
+            </div>
+            <RichTextEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Write your note with rich text formatting (bold, headings, lists, links, code)..."
+            />
+          </div>
 
           {/* Attachments Upload Section */}
           <div className="mb-3">
@@ -1002,13 +1151,54 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
           </div>
 
           <div className="notes-content">
-            <input
-              type="text"
-              className="form-control mb-3"
-              placeholder="Search Notes by title, content, or folder..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="d-flex gap-2 mb-3">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search Notes by title, content, or folder..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-outline-dark d-flex align-items-center gap-1 flex-shrink-0"
+                onClick={() => setShowSearchModal(true)}
+                title="Global Search across Notes, Categories, and Tasks"
+              >
+                <i className="bi bi-search"></i>
+                <span className="d-none d-md-inline">Global Search</span>
+              </button>
+            </div>
+
+            {/* Tags Filter Ribbon */}
+            {(() => {
+              const allTags = Array.from(new Set(notes.flatMap((n) => n.tags || [])));
+              if (allTags.length === 0) return null;
+              return (
+                <div className="d-flex align-items-center gap-1 flex-wrap mb-3 p-2 bg-light rounded border">
+                  <span className="small text-muted fw-semibold me-1">Tags:</span>
+                  <button
+                    type="button"
+                    className={`btn btn-sm py-0 px-2 rounded-pill ${selectedTag === "All" ? "btn-dark" : "btn-outline-secondary"}`}
+                    style={{ fontSize: "0.78rem" }}
+                    onClick={() => setSelectedTag("All")}
+                  >
+                    All
+                  </button>
+                  {allTags.map((t, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`btn btn-sm py-0 px-2 rounded-pill ${selectedTag === t ? "btn-dark" : "btn-outline-secondary"}`}
+                      style={{ fontSize: "0.78rem" }}
+                      onClick={() => setSelectedTag(selectedTag === t ? "All" : t)}
+                    >
+                      #{t}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Active Filter Breadcrumb */}
             {(selectedCategory !== "All Notes" || selectedFolder) && (
@@ -1051,7 +1241,7 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
                 .filter((note) => {
                   const matchesSearch =
                     note.title.toLowerCase().includes(search.toLowerCase()) ||
-                    note.description
+                    (note.description || "")
                       .toLowerCase()
                       .includes(search.toLowerCase()) ||
                     (note.folder &&
@@ -1069,7 +1259,11 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
                     matchesFolder = note.folder === selectedFolder;
                   }
 
-                  return matchesSearch && matchesCategory && matchesFolder;
+                  const matchesTag =
+                    selectedTag === "All" ||
+                    (note.tags && note.tags.includes(selectedTag));
+
+                  return matchesSearch && matchesCategory && matchesFolder && matchesTag;
                 })
                 .map((note) => (
                   <div key={note._id} className="note-card">
@@ -1091,6 +1285,11 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
                             {note.folder}
                           </span>
                         )}
+                        {note.isShared && (
+                          <span className="badge bg-primary-subtle text-primary border" title="Shared note">
+                            <i className="bi bi-people me-1"></i> Shared
+                          </span>
+                        )}
                       </div>
                       {note.attachments && note.attachments.length > 0 && (
                         <span className="attachment-badge" title={`${note.attachments.length} attachment(s)`}>
@@ -1102,16 +1301,51 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
 
                     <h4>{note.title}</h4>
 
+                    {/* Tags Chips */}
+                    {note.tags && note.tags.length > 0 && (
+                      <div className="d-flex flex-wrap gap-1 mb-2">
+                        {note.tags.map((t, idx) => (
+                          <span
+                            key={idx}
+                            className="badge bg-warning-subtle text-dark border small"
+                            style={{ fontSize: "0.72rem", cursor: "pointer" }}
+                            onClick={() => setSelectedTag(t)}
+                            title={`Filter by #${t}`}
+                          >
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     {note.deadline && (
-                      <p className="text-danger small">
-                        📅 Due:{" "}
-                        {new Date(note.deadline)
-                          .toLocaleDateString("en-GB")
-                          .replace(/\//g, "-")}
+                      <p className="text-danger small mb-2 d-flex align-items-center gap-1">
+                        <i className="bi bi-calendar-event"></i>
+                        <span>
+                          Due: {new Date(note.deadline).toLocaleDateString("en-GB").replace(/\//g, "-")}
+                        </span>
+                        {note.reminderTime && note.reminderTime !== "at_deadline" && (
+                          <span className="badge bg-light text-muted border ms-1" style={{ fontSize: "0.7rem" }}>
+                            ⏰ {note.reminderTime.replace(/_/g, " ")}
+                          </span>
+                        )}
                       </p>
                     )}
 
-                    <p>{note.description}</p>
+                    {/* Rich text rendered securely with DOMPurify */}
+                    <div
+                      className="note-description-content mb-3"
+                      style={{
+                        maxHeight: "220px",
+                        overflowY: "auto",
+                        fontSize: "0.92rem",
+                        lineHeight: "1.6",
+                        color: "#332720"
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(note.description || "")
+                      }}
+                    />
 
                     {/* Attachments Section in Note Card */}
                     {note.attachments && note.attachments.length > 0 && (
@@ -1189,19 +1423,38 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
                       </div>
                     )}
 
-                    <div className="d-flex mt-2">
+                    {/* Card Actions */}
+                    <div className="d-flex align-items-center flex-wrap gap-2 mt-2">
                       <button
                         className="btn btn-warning btn-sm"
                         onClick={() => handleEdit(note)}
                       >
-                        Edit
+                        <i className="bi bi-pencil-square me-1"></i> Edit
                       </button>
 
                       <button
-                        className="btn btn-danger btn-sm ms-2"
+                        className="btn btn-danger btn-sm"
                         onClick={() => handleDelete(note._id)}
                       >
-                        Delete
+                        <i className="bi bi-trash me-1"></i> Delete
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => setShareModalNote(note)}
+                        title="Share Note"
+                      >
+                        <i className="bi bi-share me-1"></i> Share
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-outline-warning btn-sm text-dark"
+                        onClick={() => setAiModalNote(note)}
+                        title="AI Summary"
+                      >
+                        <i className="bi bi-stars me-1 text-warning"></i> AI
                       </button>
                     </div>
                   </div>
@@ -1216,6 +1469,46 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
         <AttachmentPreview
           attachment={cardPreviewItem}
           onClose={() => setCardPreviewItem(null)}
+        />
+      )}
+
+      {/* AI Summary Modal */}
+      {aiModalNote && (
+        <AISummaryModal
+          show={!!aiModalNote}
+          noteTitle={aiModalNote.title}
+          noteContent={aiModalNote.description}
+          onClose={() => setAiModalNote(null)}
+          onApplySummary={(summaryText) => {
+            setContent((prev) => `${prev}<hr/><h4>✨ AI Summary</h4><p>${summaryText.replace(/\n/g, '<br/>')}</p>`);
+            toast.success("AI summary appended to note editor!", "Summary Applied");
+          }}
+        />
+      )}
+
+      {/* Share Note Modal */}
+      {shareModalNote && (
+        <ShareNoteModal
+          show={!!shareModalNote}
+          note={shareModalNote}
+          onClose={() => setShareModalNote(null)}
+          onShareUpdated={(updatedNote) => {
+            setNotes((prev) => prev.map((n) => (n._id === updatedNote._id ? updatedNote : n)));
+            setShareModalNote(updatedNote);
+          }}
+        />
+      )}
+
+      {/* Global Search Modal */}
+      {showSearchModal && (
+        <SearchModal
+          show={showSearchModal}
+          onClose={() => setShowSearchModal(false)}
+          onSelectNote={(note) => {
+            setSelectedCategory(note.category || "All Notes");
+            setSelectedFolder(note.folder || "");
+            handleEdit(note);
+          }}
         />
       )}
     </div>
