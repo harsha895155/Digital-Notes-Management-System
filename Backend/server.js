@@ -581,7 +581,7 @@ app.get("/api/notes/detail/:id", authMiddleware, validateIdParam("id"), async (r
 // POST /api/notes (Protected by JWT, assigns userEmail from token)
 app.post("/api/notes", authMiddleware, async (req, res) => {
   try {
-    const { title, description, category, folder, deadline, attachments, tags } = req.body;
+    const { title, description, category, folder, deadline, attachments, tags, reminderTime, reminderMinutesBefore } = req.body;
 
     if (!title || !description || !category) {
       return res.status(400).json({ message: "Title, content, and category are required." });
@@ -591,15 +591,28 @@ app.post("/api/notes", authMiddleware, async (req, res) => {
       title: title.trim(),
       description,
       category: category.trim(),
-      folder: folder ? folder.trim() : "",
-      deadline: deadline || null,
+      folder: typeof folder === "string" ? folder.trim() : "",
+      deadline: deadline ? new Date(deadline) : null,
+      reminderTime: reminderTime || null,
+      reminderMinutesBefore: reminderMinutesBefore || 0,
       userEmail: req.user.email, // Derived securely from JWT
-      attachments: attachments || [],
+      attachments: Array.isArray(attachments)
+        ? attachments.map((att) => ({
+            ...att,
+            userEmail: att.userEmail || req.user.email,
+            storageKey: att.storageKey || `att_${Date.now()}`,
+            url: att.url || "",
+            mimeType: att.mimeType || "application/octet-stream",
+            size: att.size || 0,
+            originalName: att.originalName || "attachment",
+          }))
+        : [],
       tags: Array.isArray(tags) ? tags.map((t) => t.trim().replace(/^#/, "")).filter(Boolean) : [],
     });
 
     res.status(201).json(note);
   } catch (error) {
+    console.error("POST note error:", error);
     res.status(500).json({ message: "Failed to create note", error: error.message });
   }
 });
@@ -625,9 +638,19 @@ app.put("/api/notes/:id", authMiddleware, validateIdParam("id"), async (req, res
     if (title) note.title = title.trim();
     if (description !== undefined) note.description = description;
     if (category) note.category = category.trim();
-    if (folder !== undefined) note.folder = folder.trim();
-    if (deadline !== undefined) note.deadline = deadline || null;
-    if (attachments !== undefined) note.attachments = attachments;
+    if (folder !== undefined) note.folder = typeof folder === "string" ? folder.trim() : "";
+    if (deadline !== undefined) note.deadline = deadline ? new Date(deadline) : null;
+    if (attachments !== undefined && Array.isArray(attachments)) {
+      note.attachments = attachments.map((att) => ({
+        ...att,
+        userEmail: att.userEmail || note.userEmail || req.user.email,
+        storageKey: att.storageKey || `att_${Date.now()}`,
+        url: att.url || "",
+        mimeType: att.mimeType || "application/octet-stream",
+        size: att.size || 0,
+        originalName: att.originalName || "attachment",
+      }));
+    }
     if (tags !== undefined && Array.isArray(tags)) {
       note.tags = tags.map((t) => t.trim().replace(/^#/, "")).filter(Boolean);
     }
@@ -651,6 +674,7 @@ app.put("/api/notes/:id", authMiddleware, validateIdParam("id"), async (req, res
     await note.save();
     res.status(200).json(note);
   } catch (error) {
+    console.error("PUT note error:", error);
     res.status(500).json({ message: "Failed to update note", error: error.message });
   }
 });

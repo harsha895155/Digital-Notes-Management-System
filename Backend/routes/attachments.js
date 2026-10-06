@@ -147,6 +147,7 @@ router.post(
       res.status(200).json({
         message: "Attachments added successfully.",
         attachments: note.attachments,
+        note: note,
         addedCount: newAttachments.length,
       });
     } catch (error) {
@@ -281,6 +282,7 @@ router.post(
       res.status(200).json({
         message: "Task attachments added successfully.",
         attachments: todo.attachments,
+        todo: todo,
       });
     } catch (error) {
       res.status(500).json({

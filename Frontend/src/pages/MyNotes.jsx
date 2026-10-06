@@ -380,8 +380,8 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
     } catch (error) {
       console.error("FULL ERROR:", error);
       const serverMsg =
-        error.response?.data?.message ||
-        error.response?.data?.error;
+        error.response?.data?.error ||
+        error.response?.data?.message;
       const isNetworkErr = error.message === "Network Error" || !error.response;
       const displayMsg =
         serverMsg ||
@@ -865,16 +865,18 @@ function MyNotes({ fetchTotalNotes, fetchUpcomingNotes }) {
                       )
                     );
                   } else {
-                    setEditAttachments((prev) => [
-                      ...prev,
-                      ...newAttachments,
-                    ]);
+                    setEditAttachments((prev) => {
+                      const seen = new Set(prev.map((a) => a._id || a.storageKey));
+                      const fresh = newAttachments.filter((a) => !seen.has(a._id || a.storageKey));
+                      return [...prev, ...fresh];
+                    });
                   }
                 } else {
-                  setStagedAttachments((prev) => [
-                    ...prev,
-                    ...newAttachments,
-                  ]);
+                  setStagedAttachments((prev) => {
+                    const seen = new Set(prev.map((a) => a._id || a.storageKey));
+                    const fresh = newAttachments.filter((a) => !seen.has(a._id || a.storageKey));
+                    return [...prev, ...fresh];
+                  });
                 }
               }}
             />

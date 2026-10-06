@@ -37,7 +37,7 @@ const attachmentSchema = new mongoose.Schema(
     },
     userEmail: {
       type: String,
-      required: true,
+      default: "",
     },
   },
   { _id: true }

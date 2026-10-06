@@ -37,7 +37,7 @@ const attachmentSchema = new mongoose.Schema(
     },
     userEmail: {
       type: String,
-      required: true,
+      default: "",
     },
   },
   { _id: true }
@@ -120,7 +120,7 @@ const noteSchema = new mongoose.Schema(
       },
     ],
     reminderTime: {
-      type: Date,
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
     reminderMinutesBefore: {
