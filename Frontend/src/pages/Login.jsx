@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import API_BASE_URL from "../api/config";
+import api, { API_BASE_URL, setAuthSession } from "../api/config";
 import { toast } from "../context/ToastContext";
 
 function Login() {
@@ -18,12 +17,13 @@ function Login() {
     }
     try {
       setLoading(true);
-      const res = await axios.post(`${API_BASE_URL}/api/login`, { email, password });
+      const res = await api.post(`/api/login`, {
+        email: email.trim(),
+        password,
+      });
       toast.success(res.data.message || "Welcome back!", "Login Successful");
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      localStorage.setItem("loginTime", Date.now());
-      setTimeout(() => { navigate("/dashboard"); }, 700);
+      setAuthSession(res.data.token, res.data.refreshToken, res.data.user);
+      navigate("/dashboard");
     } catch (err) {
       toast.error(
         err.response?.data?.message || err.message || "Unable to log in. Please verify your credentials.",

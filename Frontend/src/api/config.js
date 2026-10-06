@@ -165,5 +165,11 @@ apiClient.interceptors.response.use(
   }
 );
 
-export { apiClient };
-export default API_BASE_URL;
+// Attach string representations so template literals like `${apiClient}/api/...` or `${API_BASE_URL}/...` work seamlessly
+apiClient.API_BASE_URL = API_BASE_URL;
+apiClient.toString = () => API_BASE_URL;
+apiClient.valueOf = () => API_BASE_URL;
+
+export { API_BASE_URL, apiClient };
+export const api = apiClient;
+export default apiClient;

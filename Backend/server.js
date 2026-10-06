@@ -1,10 +1,3 @@
-try {
-  const dns = require("dns");
-  dns.setServers(["8.8.8.8", "1.1.1.1"]);
-} catch (err) {
-  // Ignored in environments where custom DNS servers are restricted
-}
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -34,6 +27,7 @@ const { upload, uploadFileToStorage, deleteFileFromStorage } = require("./servic
 const attachmentRoutes = require("./routes/attachments");
 
 const app = express();
+app.set("trust proxy", 1);
 
 // ==================== CORS CONFIGURATION (Phase 5) ====================
 const defaultAllowedOrigins = [
@@ -219,7 +213,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail }).lean();
 
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password." });

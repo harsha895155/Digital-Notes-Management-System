@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/config";
+import api, { API_BASE_URL, getAuthHeaders } from "../api/config";
 import { toast, showConfirm } from "../context/ToastContext";
 import Layout from "../components/Layout";
 import AttachmentPreview from "../components/AttachmentPreview";
@@ -83,17 +83,39 @@ export default function Categories() {
         api.get(`/api/notes/${user.email}`),
       ]);
 
-      if (catRes.data) {
+      if (catRes && catRes.data) {
         setCategories(catRes.data);
         saveOfflineStore("categories", catRes.data);
       }
-      if (notesRes.data) {
+      if (notesRes && notesRes.data) {
         setNotes(notesRes.data);
         saveOfflineStore("notes", notesRes.data);
       }
       setError(null);
     } catch (err) {
-      console.warn("Network request for categories failed or timed out:", err);
+      console.warn("apiClient request for categories failed or timed out:", err);
+      // Fallback: Try native fetch with token
+      try {
+        const token = localStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const [cRes, nRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/categories/${encodeURIComponent(user.email)}`, { headers }).then(r => r.ok ? r.json() : null),
+          fetch(`${API_BASE_URL}/api/notes/${encodeURIComponent(user.email)}`, { headers }).then(r => r.ok ? r.json() : null)
+        ]);
+        if (Array.isArray(cRes)) {
+          setCategories(cRes);
+          saveOfflineStore("categories", cRes);
+          if (Array.isArray(nRes)) {
+            setNotes(nRes);
+            saveOfflineStore("notes", nRes);
+          }
+          setError(null);
+          return;
+        }
+      } catch (fallbackErr) {
+        console.warn("Direct fetch fallback also failed:", fallbackErr);
+      }
+
       setCategories((prev) => {
         if (prev.length === 0) {
           setError(
