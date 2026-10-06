@@ -70,7 +70,6 @@ export const getAuthHeaders = (extraHeaders = {}) => {
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  timeout: 100000000,
 });
 
 // Request interceptor: attach current Bearer token

@@ -70,7 +70,7 @@ export default function Profile() {
     } catch (err) {
       console.error("Failed to load profile:", err);
       if (err.response?.status === 401) {
-        toast.warning("Session expired. Please log in again.", "Session Timeout");
+        toast.warning("Please log in to continue.", "Authentication Required");
         handleLogout();
         return;
       }

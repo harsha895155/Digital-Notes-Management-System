@@ -69,18 +69,10 @@ function Dashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const loginTime = localStorage.getItem("loginTime");
     if (!token || !user) { navigate("/"); return; }
     fetchTotalNotes();
     fetchUpcomingNotes();
     fetchTodos();
-    if (loginTime && Date.now() - Number(loginTime) > 3600000) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("loginTime");
-      toast.warning("Your session has expired. Please login again.", "Session Timeout");
-      navigate("/");
-    }
   }, [user, navigate]);
 
   useEffect(() => {
