@@ -215,7 +215,17 @@ function Dashboard() {
                   <i className="bi bi-alarm" />
                   Upcoming Deadlines
                 </div>
-                <span className="md-badge md-badge-warning">{upcomingNotes.length} soon</span>
+                <div className="d-flex align-items-center gap-2">
+                  <span className="md-badge md-badge-warning">{upcomingNotes.length} soon</span>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-link text-decoration-none p-0 fw-bold"
+                    style={{ color: "var(--md-primary)", fontSize: "0.82rem" }}
+                    onClick={() => navigate("/calendar")}
+                  >
+                    View Calendar &rarr;
+                  </button>
+                </div>
               </div>
               {upcomingNotes.length === 0 ? (
                 <div className="md-empty-state" style={{ padding: "28px 16px" }}>

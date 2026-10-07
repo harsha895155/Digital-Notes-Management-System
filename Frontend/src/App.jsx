@@ -10,6 +10,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Categories from "./pages/Categories";
+import CalendarPage from "./pages/CalendarPage";
 import Welcome from "./pages/Welcome";
 import SyncStatusBanner from "./components/SyncStatusBanner";
 
@@ -46,7 +47,7 @@ function App() {
           />
           <Route
             path="/calendar"
-            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+            element={<ProtectedRoute><CalendarPage /></ProtectedRoute>}
           />
           <Route
             path="/tasks"
