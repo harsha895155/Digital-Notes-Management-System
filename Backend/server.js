@@ -157,7 +157,8 @@ app.use("/api", attachmentRoutes);
 // POST /api/register
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
-    const { fullName, email, password, confirmPassword } = req.body;
+    const fullName = (req.body.fullName || req.body.name || "").trim();
+    const { email, password, confirmPassword } = req.body;
 
     if (!fullName || !email || !password) {
       return res.status(400).json({ message: "All required fields must be provided." });
@@ -539,9 +540,35 @@ app.get("/api/notes", authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/notes/:email (Protected by JWT with verifyEmailOwnership)
-app.get("/api/notes/:email", authMiddleware, verifyEmailOwnership, async (req, res) => {
+// GET /api/notes/:email or /api/notes/:id
+app.get("/api/notes/:email", authMiddleware, async (req, res) => {
   try {
+    const param = (req.params.email || "").trim();
+
+    // If param is an ObjectId (24 hex characters) and not an email, treat as single note lookup
+    if (mongoose.Types.ObjectId.isValid(param) && !param.includes("@")) {
+      const note = await Note.findById(param);
+      if (!note) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+
+      const isOwner = note.userEmail === req.user.email;
+      const share = (note.shares || []).find((s) => s.userEmail === req.user.email);
+
+      if (!isOwner && !share) {
+        return res.status(403).json({ message: "Forbidden: You do not have permission to view this note." });
+      }
+
+      return res.status(200).json(note);
+    }
+
+    // Otherwise, enforce email ownership check
+    if (param.toLowerCase() !== req.user.email) {
+      return res.status(403).json({
+        message: "Forbidden: You are not authorized to access data for this email address.",
+      });
+    }
+
     const notes = await Note.find({
       $or: [
         { userEmail: req.user.email },
@@ -705,15 +732,16 @@ app.delete("/api/notes/:id", authMiddleware, validateIdParam("id"), async (req, 
   }
 });
 
-// POST /api/notes/:id/share (Phase 13 Share Note with User)
-app.post("/api/notes/:id/share", authMiddleware, validateIdParam("id"), async (req, res) => {
+// POST /api/notes/:id/share and POST /api/shares/:id
+const handleShareNote = async (req, res) => {
   try {
-    const { targetEmail, permission = "viewer" } = req.body;
-    if (!targetEmail || !isValidEmail(targetEmail)) {
+    const rawTarget = req.body.targetEmail || req.body.email;
+    const { permission = "viewer" } = req.body;
+    if (!rawTarget || !isValidEmail(rawTarget)) {
       return res.status(400).json({ message: "Valid target user email is required." });
     }
 
-    const normalizedTarget = targetEmail.toLowerCase().trim();
+    const normalizedTarget = rawTarget.toLowerCase().trim();
     if (normalizedTarget === req.user.email) {
       return res.status(400).json({ message: "You cannot share a note with yourself." });
     }
@@ -769,10 +797,13 @@ app.post("/api/notes/:id/share", authMiddleware, validateIdParam("id"), async (r
   } catch (error) {
     res.status(500).json({ message: "Failed to share note", error: error.message });
   }
-});
+};
 
-// DELETE /api/notes/:id/share/:email (Phase 13 Revoke or Leave Share)
-app.delete("/api/notes/:id/share/:email", authMiddleware, validateIdParam("id"), async (req, res) => {
+app.post("/api/notes/:id/share", authMiddleware, validateIdParam("id"), handleShareNote);
+app.post("/api/shares/:id", authMiddleware, validateIdParam("id"), handleShareNote);
+
+// DELETE /api/notes/:id/share/:email and DELETE /api/shares/:id/:email
+const handleRevokeShare = async (req, res) => {
   try {
     const targetEmail = req.params.email.toLowerCase().trim();
     const note = await Note.findById(req.params.id);
@@ -801,7 +832,10 @@ app.delete("/api/notes/:id/share/:email", authMiddleware, validateIdParam("id"),
   } catch (error) {
     res.status(500).json({ message: "Failed to revoke share", error: error.message });
   }
-});
+};
+
+app.delete("/api/notes/:id/share/:email", authMiddleware, validateIdParam("id"), handleRevokeShare);
+app.delete("/api/shares/:id/:email", authMiddleware, validateIdParam("id"), handleRevokeShare);
 
 // ==================== CATEGORIES CRUD (Phases 1, 2) ====================
 
@@ -1106,6 +1140,11 @@ app.get("/api/search", authMiddleware, async (req, res) => {
       notes: matchingNotes,
       categories: matchingCategories,
       todos: matchingTodos,
+      results: {
+        notes: matchingNotes,
+        categories: matchingCategories,
+        todos: matchingTodos,
+      },
       totalCount: matchingNotes.length + matchingCategories.length + matchingTodos.length,
     });
   } catch (error) {

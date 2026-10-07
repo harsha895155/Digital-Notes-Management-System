@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = process.env.TEST_URL || "http://127.0.0.1:5001";
 
 async function runTests() {
   console.log("=== STARTING COMPREHENSIVE ATTACHMENT TESTS ===\n");
@@ -257,13 +257,20 @@ async function runTests() {
     // Toggle todo status and confirm attachment remains
     const toggleRes = await fetch(`${BASE_URL}/api/todos/${createdTodo._id}`, {
       method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token1}`,
+      },
+      body: JSON.stringify({ completed: true }),
     });
     const toggledTodo = await toggleRes.json();
     assert(toggledTodo.completed === true, "Task marked as completed");
 
-    const refreshTodosRes = await fetch(`${BASE_URL}/api/todos/minddesk43@gmail.com`);
+    const refreshTodosRes = await fetch(`${BASE_URL}/api/todos/minddesk43@gmail.com`, {
+      headers: { Authorization: `Bearer ${token1}` },
+    });
     const allTodos = await refreshTodosRes.json();
-    const foundTask = allTodos.find((t) => t._id === createdTodo._id);
+    const foundTask = Array.isArray(allTodos) ? allTodos.find((t) => t._id === createdTodo._id) : null;
     assert(foundTask?.attachments?.length === 1, "Task attachments intact after completion toggle");
 
     // Delete task attachment

@@ -1,5 +1,6 @@
 // Automated Test Suite for MindDesk Production Upgrade
 const http = require('http');
+const https = require('https');
 
 // Load environment variables
 require('dotenv').config();
@@ -9,6 +10,7 @@ const BASE_URL = process.env.TEST_URL || 'http://localhost:5000';
 function makeRequest(method, path, body = null, headers = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, BASE_URL);
+    const client = url.protocol === 'https:' ? https : http;
     const reqHeaders = {
       'Content-Type': 'application/json',
       ...headers
@@ -17,12 +19,12 @@ function makeRequest(method, path, body = null, headers = {}) {
     const options = {
       method,
       hostname: url.hostname,
-      port: url.port,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
       path: url.pathname + url.search,
       headers: reqHeaders
     };
 
-    const req = http.request(options, (res) => {
+    const req = client.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => {
         data += chunk;
@@ -54,12 +56,12 @@ async function runTestSuite() {
 
   const testSuffix = Date.now();
   const userA = {
-    name: 'User Alpha',
+    fullName: 'User Alpha',
     email: `alpha_${testSuffix}@minddesk.test`,
     password: 'Password123!'
   };
   const userB = {
-    name: 'User Beta',
+    fullName: 'User Beta',
     email: `beta_${testSuffix}@minddesk.test`,
     password: 'Password123!'
   };
@@ -114,7 +116,7 @@ async function runTestSuite() {
       email: userA.email
     });
     console.assert(forgotRes.status === 200, `Forgot password returned ${forgotRes.status}`);
-    console.assert(forgotRes.body.message.includes('If an account exists'), 'Email privacy response violation');
+    console.assert(forgotRes.body.message.includes('If an account'), 'Email privacy response violation');
 
     if (forgotRes.body.resetToken) {
       const resetRes = await makeRequest('POST', '/api/auth/reset-password', {

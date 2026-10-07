@@ -71,10 +71,11 @@ const verifyPasswordResetToken = async (rawToken, email) => {
  * Send password reset email (handles both SMTP and safe fallback)
  */
 const sendPasswordResetEmail = async ({ email, rawToken, req }) => {
-  const frontendUrl =
+  const frontendUrl = (
     process.env.FRONTEND_URL ||
     (req && req.headers.origin) ||
-    "https://digital-notes-management-system.vercel.app";
+    "https://digital-notes-management-system.vercel.app"
+  ).replace(/\/+$/, "");
 
   const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(
     email
