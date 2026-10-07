@@ -230,6 +230,13 @@ async function runTestSuite() {
     console.assert(postRevokeGet.status === 403 || postRevokeGet.status === 404, `Expected 403/404 after revoke, got ${postRevokeGet.status}`);
     console.log('  ✓ PASS: Access successfully revoked.');
 
+    // Clean up created test note
+    if (noteAId) {
+      await makeRequest('DELETE', `/api/notes/${noteAId}`, null, {
+        Authorization: `Bearer ${tokenA}`
+      });
+    }
+
     // 12. Logout & Token Invalidation
     console.log('\n[TEST 12] Logout & Refresh Token Revocation...');
     const logoutRes = await makeRequest('POST', '/api/auth/logout', {

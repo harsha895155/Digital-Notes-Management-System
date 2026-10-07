@@ -21,12 +21,26 @@ async function runTests() {
   try {
     // 1. Authenticate user 1
     console.log("--- 1. Authenticating Primary User ---");
+    const testUser1Email = `att_u1_${Date.now()}@testsuite.local`;
+    const testUser2Email = `att_u2_${Date.now()}@testsuite.local`;
+
+    await fetch(`${BASE_URL}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: "Attachment Tester 1",
+        email: testUser1Email,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      }),
+    });
+
     const loginRes = await fetch(`${BASE_URL}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: "minddesk43@gmail.com",
-        password: "Minddesk@1234",
+        email: testUser1Email,
+        password: "Password@123",
       }),
     });
     const loginData = await loginRes.json();
@@ -40,7 +54,7 @@ async function runTests() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         fullName: "Security Tester",
-        email: "sectest@minddesk.app",
+        email: testUser2Email,
         password: "Password@123",
         confirmPassword: "Password@123",
       }),
@@ -50,7 +64,7 @@ async function runTests() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: "sectest@minddesk.app",
+        email: testUser2Email,
         password: "Password@123",
       }),
     });
@@ -284,7 +298,10 @@ async function runTests() {
     assert(delTaskAttRes.status === 200, "Task attachment deleted successfully");
 
     // Clean up task
-    await fetch(`${BASE_URL}/api/todos/${createdTodo._id}`, { method: "DELETE" });
+    await fetch(`${BASE_URL}/api/todos/${createdTodo._id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token1}` },
+    });
 
     // 14. Cascade deletion on Note Delete
     console.log("\n--- 14. Testing Note Cascade Deletion ---");
