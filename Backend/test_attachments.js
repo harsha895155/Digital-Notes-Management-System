@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const BASE_URL = process.env.TEST_URL || "http://127.0.0.1:5001";
+const BASE_URL = process.argv[2] || process.env.TEST_URL || "http://127.0.0.1:5001";
 
 async function runTests() {
   console.log("=== STARTING COMPREHENSIVE ATTACHMENT TESTS ===\n");

@@ -5,7 +5,7 @@ const https = require('https');
 // Load environment variables
 require('dotenv').config();
 
-const BASE_URL = process.env.TEST_URL || 'http://localhost:5000';
+const BASE_URL = process.argv[2] || process.env.TEST_URL || 'http://localhost:5000';
 
 function makeRequest(method, path, body = null, headers = {}) {
   return new Promise((resolve, reject) => {
